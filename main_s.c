@@ -92,13 +92,25 @@ mysocket = socket(AF_INET, SOCK_STREAM,0);
 
 bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
 
-int host =1;
+int parent =1;
 int ende = 0;
-while(host == 1 && ende == 0) {
+while(parent == 1 && ende == 0) {
     listen(mysocket, 10);
-    fork();
+    usleep(10000);
+   // printf("JUMP!");
+    if(fork() == 0){
+        //child
+        parent = 0;
+    }
     //TODO: abbruchbedingung durch eingabe
 }
+
+if(parent == 1){
+    printf("Server wird beendet!\n");
+    return 0;
+}
+
+
     int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);
 while(consocket){
     printf("Verbindung von: %s\n",inet_ntoa(dest.sin_addr));
