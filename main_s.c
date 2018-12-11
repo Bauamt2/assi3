@@ -6,8 +6,12 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #define NACHRICHTENLAENGE 100
+#define KEY 1234
 //
 int efuellen(int e[],char* estring){
     char* temp[7];
@@ -33,6 +37,35 @@ int efuellen(int e[],char* estring){
     }
 
 return 1;
+}
+int create_semaphore(){
+    int semid;
+    //semaphore erstellen oder existierendes verwenden
+    semid = semget(KEY, 0, IPC_PRIVATE);
+    if(semid < 0){
+        //semaphore existiert noch nicht
+        semid = semget(KEY,1,IPC_CREAT| IPC_EXCL|PERM);
+        if(semid <0){
+            printf("Cannot create Semaphore.");
+            return -1;
+        }
+        if(semctl(semid,0,SETVAL,(int) 1)==-1){
+            printf("Cannot initialize semaphore with one.")
+            return -1;
+        }
+    }
+}
+void getScoreTable(){
+    //semaphore anfragen
+   semop();//wert des Semaphores auf 0 setzten;später nutzen, um semaphore wieder auf 1 zu setzten
+    //schreiben oder lesen?
+}
+
+void readScoreTable(){
+    //show all results or only the position of one player?
+}
+void writeScoreTable(int points, char *name_pointer){
+    //schreibe einen neuen wert in die Tabelle;falls möglich
 }
 
 int main(int argc, char **argv) {// -e 1 2 3 4 5 6 7 -n 199(ergebnis) -t 23000 (port)
