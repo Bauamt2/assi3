@@ -12,6 +12,8 @@
 
 #define NACHRICHTENLAENGE 100
 #define KEY 1234
+static struct sembuf semaphore;
+static int semid;
 //
 int efuellen(int e[],char* estring){
     char* temp[7];
@@ -39,11 +41,11 @@ int efuellen(int e[],char* estring){
 return 1;
 }
 int create_semaphore(){
-    int semid;
-    //semaphore erstellen oder existierendes verwenden
+
+    //try to get existing semaphore
     semid = semget(KEY, 0, IPC_PRIVATE);
     if(semid < 0){
-        //semaphore existiert noch nicht
+        //if semaphore does not exists, create new semaphore
         semid = semget(KEY,1,IPC_CREAT| IPC_EXCL|PERM);
         if(semid <0){
             printf("Cannot create Semaphore.");
@@ -53,6 +55,14 @@ int create_semaphore(){
             printf("Cannot initialize semaphore with one.")
             return -1;
         }
+    }
+}
+
+int semaphoreUsing(int operation){
+    semaphore.sem_op = operation;
+    semaphore.sem_flg = SEM_UNDO;
+    if(semop(semid, &semaphore, 1)== -1){
+        //Fehler abfangen
     }
 }
 void getScoreTable(){
