@@ -56,13 +56,13 @@ int create_semaphore(){
     semid = semget(KEY, 0, IPC_PRIVATE);
     if(semid < 0){
         //if semaphore does not exists, create new semaphore
-        semid = semget(KEY,1,IPC_CREAT| IPC_EXCL|PERM);
+        //semid = semget(KEY,1,IPC_CREAT| IPC_EXCL|PERM); //TODO: OUTCOMMENTED damits compiliert
         if(semid <0){
             printf("Cannot create Semaphore.");
             return -1;
         }
         if(semctl(semid,0,SETVAL,(int) 1)==-1){
-            printf("Cannot initialize semaphore with one.")
+            printf("Cannot initialize semaphore with one.");
             return -1;
         }
     }

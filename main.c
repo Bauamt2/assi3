@@ -55,8 +55,12 @@ int port=0;
     printf("Port: %d\n",port);
     printf("Hostname: %s\n",hostname);
     char ip[17];
-   if( hostnameToIp(hostname,ip) == 0){//IP Herausfinden
-       printf("Fehler beim auflösen des Hostnames!");
+
+    if(inet_addr(hostname) != -1){
+        printf("IP WURDE ANGEBEN!\n");
+        strcpy(ip,hostname);
+    }else if( hostnameToIp(hostname,ip) == 0){//IP Herausfinden
+       printf("Fehler beim auflösen des Hostnames!\n");
        return -1;
    }
     printf("Ip: %s\n",ip);
