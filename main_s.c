@@ -99,6 +99,7 @@ void getScoreTable(int operation){
 void readScoreTable(char *name_pointer){
     semaphoreUsing(LOCK);
     //show all results or only the position of one player?
+    //TODO Tabelle
     semaphoreUsing(UNLOCK);
 }
 
