@@ -9,6 +9,11 @@
 #include <netdb.h>
 //
 
+/*
+ * Diese Funktion wandelt einen Hostnamen in eine ip um(beides als String)
+ * SOllte es nicht klappen wird 0 returnt,
+ * sollte es erfolgreich sein wird 1 returnt.
+ */
 int hostnameToIp(char hostname[],char ip[]){
     struct hostent* host;
     struct in_addr** addr;
@@ -78,16 +83,18 @@ dest.sin_addr.s_addr = inet_addr(ip);
 dest.sin_port = htons(port);
 
 connect(mysocket, (struct sockaddr*)&dest, sizeof(struct sockaddr_in));
+//Ab hier ist der Client mit dem Server verbunden
+len = recv(mysocket, buffer, 100, 0);//empfange Nachricht vom Server
+buffer[len] = '\0';//fügt Endzeichen hinzu
 
-len = recv(mysocket, buffer, 100, 0);
-buffer[len] = '\0';
+printf("Nachricht vom Server: %s\n",buffer);//printe Nachricht vom Server
+char* senden = "Hallo an den Server!";
+sleep(3);
+send(mysocket, senden,strlen(senden),0);
 
-printf("Nachricht vom Server: %s\n",buffer);
-
-close(mysocket);
+close(mysocket);//schließe Verbindung
 
 //ENDE VERBINDUNG
-
 
 
 

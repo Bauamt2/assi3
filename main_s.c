@@ -18,7 +18,22 @@
 static struct sembuf semaphore;
 static int semid;
 //
-int efuellen(int e[],char* estring){
+
+/*
+ * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
+ * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
+ */
+void waitRecv(int socket, void* recvbuffer){
+    int fehler=0;
+    printf("warte auf paket\n");
+
+    while(fehler = recv(socket,recvbuffer,100,0) == 0){
+        usleep(1000);
+    }
+    printf("paket angekommen\n");
+    return;
+}
+int efuellen(int e[],char estring[]){
     char* temp[7];
     int warn =0;
 
@@ -115,7 +130,7 @@ void writeScoreTable(int points, char *name_pointer){
 
 int main(int argc, char **argv) {// -e 1 2 3 4 5 6 7 -n 199(ergebnis) -t 23000 (port)
     int e[7];
-    char* estring = NULL;
+    char* anfangestring;
     int erg = 0;
     uint16_t port = 0;
     int opt = 0;
@@ -128,17 +143,17 @@ while((opt = getopt(argc,argv, "e:n:p:")) != -1){
             erg = atoi(optarg);
             break;
         case 'e':
-            estring = optarg;
+            if(efuellen(e, optarg) < 1){
+                printf("Fehler beim Parameter e!\n");
+                return -1;
+            }
             break;
     }
 }
 
 printf("Port: %d\n",port);
 printf("Ergebnis: %d\n",erg);
-printf("Aufgabe: %s\n",estring);
-if(efuellen(e, estring) < 1){
-    return -1;
-}
+
 if(erg < 1 || erg > 1000){
     printf("Parameter n fehlerhaft! Der Wert muss zwischen 1 und 1000 liegen!\n");
     return -1;
@@ -190,9 +205,13 @@ if(parent == 1){
 
 
     int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);
+    char recvbuffer[101];
 while(consocket){
     printf("Verbindung von: %s\n",inet_ntoa(dest.sin_addr));
     send(consocket, nachricht, strlen(nachricht),0);
+    //recv(consocket, recvbuffer, 100, 0);
+    waitRecv(consocket,recvbuffer);
+    printf("Nachricht vom Client: %s\n",recvbuffer);
     close(consocket);
     consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 }
