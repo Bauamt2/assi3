@@ -90,7 +90,12 @@ buffer[len] = '\0';//fügt Endzeichen hinzu
 printf("Nachricht vom Server: %s\n",buffer);//printe Nachricht vom Server
 char* senden = "Hallo an den Server!";
 sleep(3);
-send(mysocket, senden,strlen(senden),0);
+send(mysocket, senden,strlen(senden),0);//Sende willkommensnachrich an den Server
+
+//warte auf Benutzereingabe in Schleife, aktualisiere spielbildschirm nach jedem durchlauf
+    //wenn TOP,sende an server, erwarte leaderboard
+    //wenn Quit, sage server tschüss, verlasse schleife
+    //wenn lösungsversuch überprüfe ob syntaktisch korrekt und sende dann, warte auf antwort vom server
 
 close(mysocket);//schließe Verbindung
 

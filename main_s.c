@@ -204,19 +204,31 @@ if(parent == 1){
 }
 
 
-    int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);
-    char recvbuffer[101];
-while(consocket){
-    printf("Verbindung von: %s\n",inet_ntoa(dest.sin_addr));
-    send(consocket, nachricht, strlen(nachricht),0);
-    //recv(consocket, recvbuffer, 100, 0);
-    waitRecv(consocket,recvbuffer);
-    printf("Nachricht vom Client: %s\n",recvbuffer);
-    close(consocket);
-    consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
-}
+    int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
+    char recvbuffer[101];//Für die empfangene Nachricht vom Client
 
-close(mysocket);
+    printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
+    send(consocket, nachricht, strlen(nachricht),0);//sende Willkommensnachricht an den Client
+    waitRecv(consocket,recvbuffer);//empfange Nachricht vom Client
+    printf("Nachricht vom Client: %s\n",recvbuffer);//Zeige nachricht vom Client
+
+    //sende Aufgabe an den Client
+
+    //warte in Schleife auf Lösungsversuche,TOP oder QUIT
+        //erwarte Lösungsversuch
+            //berechne das ergebnis
+            //sende ans leaderboard
+            //antworte dem Client zu seiner Lösung
+        //erwarte QUIT, verlasse schleife dann
+        //erwarte TOP, sende dann die Top 10
+
+
+
+
+
+    printf("Verbindung geschlossen von: %s\n",inet_ntoa(dest.sin_addr));
+    close(consocket);//schließe verbindung
+    close(mysocket);//schließe verbindung
 
 //delete semaphore and shared memory after a program crash
 //ipcrm -M;
