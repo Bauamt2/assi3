@@ -7,11 +7,14 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
 #define NACHRICHTENLAENGE 100
-#define KEY 1234
+#define KEY 123458L
+#define LOCK -1
+#define UNLOCK 1
 static struct sembuf semaphore;
 static int semid;
 //
@@ -40,6 +43,13 @@ int efuellen(int e[],char* estring){
 
 return 1;
 }
+/**Tries to get the semaphore with the KEY;
+ * if the semaphore doesnt exists, a new one is created;
+ * The semaphoreid is saved in semid.
+ *
+ * @return -1, when there are errors while creating the semaphore
+ *
+ */
 int create_semaphore(){
 
     //try to get existing semaphore
@@ -56,26 +66,50 @@ int create_semaphore(){
             return -1;
         }
     }
+    return 1;
 }
 
+
+/**Try to chnage the value of the semaphore variable;
+ * if there is an error, it would be print out and exit with 1
+ * @param operation; 1 for locking the critical section
+ * and -1 to unlock the critical section
+ * @return 1, when there are no errors
+ *
+ */
 int semaphoreUsing(int operation){
     semaphore.sem_op = operation;
     semaphore.sem_flg = SEM_UNDO;
     if(semop(semid, &semaphore, 1)== -1){
-        //Fehler abfangen
+        //Fehler abfangen?
+        perror("semop");
+        exit(1);
     }
-}
-void getScoreTable(){
-    //semaphore anfragen
-   semop();//wert des Semaphores auf 0 setzten;später nutzen, um semaphore wieder auf 1 zu setzten
-    //schreiben oder lesen?
+    return 1;
 }
 
-void readScoreTable(){
-    //show all results or only the position of one player?
+
+void getScoreTable(int operation){
 }
+
+/**
+ * @param *name_pointer points to the first character of the playersname
+ * ;is NULL if the user want to see the whole table
+ */
+void readScoreTable(char *name_pointer){
+    semaphoreUsing(LOCK);
+    //show all results or only the position of one player?
+    semaphoreUsing(UNLOCK);
+}
+
+/**
+ * @param points the points the player has
+ * @param *name_pointer points to the first character of the playersname
+ */
 void writeScoreTable(int points, char *name_pointer){
     //schreibe einen neuen wert in die Tabelle;falls möglich
+    semaphoreUsing(LOCK);
+    semaphoreUsing(UNLOCK);
 }
 
 int main(int argc, char **argv) {// -e 1 2 3 4 5 6 7 -n 199(ergebnis) -t 23000 (port)
@@ -164,7 +198,9 @@ while(consocket){
 
 close(mysocket);
 
-
+//delete semaphore and shared memory after a program crash
+//ipcrm -M;
+//ipcrm -s;
 
 
 
