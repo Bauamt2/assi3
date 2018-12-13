@@ -98,7 +98,7 @@ int create_semaphore(){
 int create_sharedMemory(){
     //TODO Größe anpassen
     key_t sharedMKey = 42;
-    sharedID = shmget(sharedMKEy,30,IPC_CREAT|0666);
+    sharedID = shmget(sharedMKey,30,IPC_CREAT|0666);
     if(sharedID <0){
         printf("Error while getting the shared memory.");
         return 1;
@@ -264,6 +264,15 @@ if(parent == 1){
     char sendbuffer[101];
 
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
+
+    sprintf(sendbuffer,"%d",erg);//diese beiden Zeilen senden erg
+    send(consocket,sendbuffer,strlen(sendbuffer),0);
+
+    for(int i=0;i<7;i++){//DIese Schleife sendet alle werte von e[]
+        usleep(1000);
+        sprintf(sendbuffer,"%d",e[i]);//diese beiden Zeilen senden erg
+        send(consocket,sendbuffer,strlen(sendbuffer),0);
+    }
 
     while(1==1){
         waitRecv(consocket,recvbuffer);

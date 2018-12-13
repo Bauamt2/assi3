@@ -7,12 +7,58 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <netdb.h>
-//
+//#
+
+void erfrageNamen(){
+    system("clear");
+    printf("Willkommen im Sopper Dooper Spiel!\n");
+    printf("Verrate mir deinen Namen Spieler!\n");
+    char* name[100];
+    //TODO: HIER WEITERPROGGEN
+}
+int pruefeAufgabe(int erg,int e[]){
+    if(erg < 1 || erg > 1000){
+        return 0;
+    }
+    for(int i=0;i<7;i++){
+        if(e[i] < 1 || e[i] > 100){
+            return 0;
+        }
+    }
+    return 1;
+}
+void zeigeAufgaben(int erg, int e[]){
+    system("clear");
+    printf("Willkommen im Sopper Dooper Spiel!\n");
+    printf("Du hast folgende Zahlen zur Auswahl: ");
+    for(int i=0;i<7;i++){
+        printf("%d ",e[i]);
+    }
+    printf("\n");
+    printf("Das Ergebnis soll möglichst nah an %d liegen!\n",erg);
+    printf("Gib deine Rechnung in Postfixnotation ein und vielleicht landest du im Scoreboard!\n");
+    printf("Viel Glück!\n\n\n\n");
+    printf("Weitere Befehle:\n");
+    printf("TOP : zeigt die bisherige Top 10 an in der auch du schon bald sein kannst!\n");
+    printf("QUIT : es wäre zwar schade, aber mit diesem Befehl kannst du das Spiel beenden\n");
+}
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
  * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
  */
+void waitRecv(int socket, char* recvbuffer){
+    int size=0;
+    printf("warte auf paket\n");
 
+    while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
+        usleep(1000);
+    }
+    recvbuffer[size] = '\0';
+    printf("!!wr paket Size: %d\n",size);
+    printf("!!wr paket Inhalt: %s\n",recvbuffer);
+
+    return;
+}
 /*
  * Diese Funktion wandelt einen Hostnamen in eine ip um(beides als String)
  * SOllte es nicht klappen wird 0 returnt,
@@ -75,7 +121,7 @@ int port=0;
     printf("Ip: %s\n",ip);
 
 //BEGINN VERBINDUNG
-char buffer[101];
+char recvbuffer[101];
 int len, mysocket;
 struct sockaddr_in dest;
 
@@ -89,9 +135,35 @@ dest.sin_port = htons(port);
 connect(mysocket, (struct sockaddr*)&dest, sizeof(struct sockaddr_in));
 printf("ich bin verbunden!\n");
 //Ab hier ist der Client mit dem Server verbunden
+int erg=0;
+int e[7];
+
+//1. Aufgaben bekommen, also erg und e befüllen!
+
+waitRecv(mysocket,recvbuffer);//in diesen 2 zeilen wurde erg empfangen
+erg = atoi(recvbuffer);
 
 
-while(1==1){
+for(int i=0;i<7;i++){//hier werden alle werte von e empfangen
+    waitRecv(mysocket,recvbuffer);
+    e[i]= atoi(recvbuffer);
+    printf("e[%d]= %d\n",i,e[i]);
+}
+if(pruefeAufgabe(erg,e) == 0){
+    printf("Fehler bei den Aufgabenparameter, Programm muss beendet werden\n");
+    return -1;
+}
+
+
+erfrageNamen();
+zeigeAufgaben(erg,e);
+
+
+
+
+
+
+while(1==1){//user eingabeschleife
     char* input[100];
     scanf("%s",&input);
     if(strncmp(input,"QUIT",4)== 0){
