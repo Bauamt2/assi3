@@ -30,7 +30,8 @@ void waitRecv(int socket, void* recvbuffer){
     while(fehler = recv(socket,recvbuffer,100,0) == 0){
         usleep(1000);
     }
-    printf("paket angekommen\n");
+    printf("paket angekommen, Fehler: %d\n",fehler);
+    //recvbuffer[fehler] = '\0';
     return;
 }
 int efuellen(int e[],char estring[]){
@@ -210,6 +211,7 @@ if(parent == 1){
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
     send(consocket, nachricht, strlen(nachricht),0);//sende Willkommensnachricht an den Client
     waitRecv(consocket,recvbuffer);//empfange Nachricht vom Client
+   // recvbuffer[100] = '\0';
     printf("Nachricht vom Client: %s\n",recvbuffer);//Zeige nachricht vom Client
 
     //sende Aufgabe an den Client

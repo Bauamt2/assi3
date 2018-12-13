@@ -8,7 +8,21 @@
 #include <sys/socket.h>
 #include <netdb.h>
 //
+/*
+ * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
+ * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
+ */
+void waitRecv(int socket, void* recvbuffer){
+    int fehler=0;
+    printf("warte auf paket\n");
 
+    while(fehler = recv(socket,recvbuffer,100,0) == 0){
+        usleep(1000);
+    }
+    //recvbuffer[fehler] = '\0';
+    printf("paket angekommen, Fehler: %d\n",fehler);
+    return;
+}
 /*
  * Diese Funktion wandelt einen Hostnamen in eine ip um(beides als String)
  * SOllte es nicht klappen wird 0 returnt,
@@ -84,12 +98,12 @@ dest.sin_port = htons(port);
 
 connect(mysocket, (struct sockaddr*)&dest, sizeof(struct sockaddr_in));
 //Ab hier ist der Client mit dem Server verbunden
-len = recv(mysocket, buffer, 100, 0);//empfange Nachricht vom Server
-buffer[len] = '\0';//fügt Endzeichen hinzu
+waitRecv(mysocket, buffer);//empfange Nachricht vom Server
+//buffer[100] = '\0';
 
 printf("Nachricht vom Server: %s\n",buffer);//printe Nachricht vom Server
+sleep(6);
 char* senden = "Hallo an den Server!";
-sleep(3);
 send(mysocket, senden,strlen(senden),0);//Sende willkommensnachrich an den Server
 
 //warte auf Benutzereingabe in Schleife, aktualisiere spielbildschirm nach jedem durchlauf
