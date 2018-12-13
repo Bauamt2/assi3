@@ -12,17 +12,7 @@
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
  * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
  */
-void waitRecv(int socket, void* recvbuffer){
-    int fehler=0;
-    printf("warte auf paket\n");
 
-    while(fehler = recv(socket,recvbuffer,100,0) == 0){
-        usleep(1000);
-    }
-    //recvbuffer[fehler] = '\0';
-    printf("paket angekommen, Fehler: %d\n",fehler);
-    return;
-}
 /*
  * Diese Funktion wandelt einen Hostnamen in eine ip um(beides als String)
  * SOllte es nicht klappen wird 0 returnt,
@@ -97,19 +87,30 @@ dest.sin_addr.s_addr = inet_addr(ip);
 dest.sin_port = htons(port);
 
 connect(mysocket, (struct sockaddr*)&dest, sizeof(struct sockaddr_in));
+printf("ich bin verbunden!\n");
 //Ab hier ist der Client mit dem Server verbunden
-waitRecv(mysocket, buffer);//empfange Nachricht vom Server
-//buffer[100] = '\0';
 
-printf("Nachricht vom Server: %s\n",buffer);//printe Nachricht vom Server
-sleep(6);
-char* senden = "Hallo an den Server!";
-send(mysocket, senden,strlen(senden),0);//Sende willkommensnachrich an den Server
 
-//warte auf Benutzereingabe in Schleife, aktualisiere spielbildschirm nach jedem durchlauf
-    //wenn TOP,sende an server, erwarte leaderboard
-    //wenn Quit, sage server tschüss, verlasse schleife
-    //wenn lösungsversuch überprüfe ob syntaktisch korrekt und sende dann, warte auf antwort vom server
+while(1==1){
+    char* input[100];
+    scanf("%s",&input);
+    if(strncmp(input,"QUIT",4)== 0){
+        break;
+    }
+    send(mysocket,input,strlen(input),0);
+}
+
+
+printf("ich disconnecte\n");
+
+
+
+
+
+
+
+
+
 
 close(mysocket);//schließe Verbindung
 

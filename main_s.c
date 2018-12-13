@@ -23,15 +23,17 @@ static int semid;
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
  * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
  */
-void waitRecv(int socket, void* recvbuffer){
-    int fehler=0;
+void waitRecv(int socket, char* recvbuffer){
+    int size=0;
     printf("warte auf paket\n");
 
-    while(fehler = recv(socket,recvbuffer,100,0) == 0){
+    while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
         usleep(1000);
     }
-    printf("paket angekommen, Fehler: %d\n",fehler);
-    //recvbuffer[fehler] = '\0';
+    recvbuffer[size] = '\0';
+    printf("!!wr paket Size: %d\n",size);
+    printf("!!wr paket Inhalt: %s\n",recvbuffer);
+
     return;
 }
 int efuellen(int e[],char estring[]){
@@ -207,22 +209,22 @@ if(parent == 1){
 
     int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
+    char sendbuffer[101];
 
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
-    send(consocket, nachricht, strlen(nachricht),0);//sende Willkommensnachricht an den Client
-    waitRecv(consocket,recvbuffer);//empfange Nachricht vom Client
-   // recvbuffer[100] = '\0';
-    printf("Nachricht vom Client: %s\n",recvbuffer);//Zeige nachricht vom Client
 
-    //sende Aufgabe an den Client
+    while(1==1){
+        waitRecv(consocket,recvbuffer);
+        printf("Nachricht vom Client: %s\n",recvbuffer);
+    }
 
-    //warte in Schleife auf Lösungsversuche,TOP oder QUIT
-        //erwarte Lösungsversuch
-            //berechne das ergebnis
-            //sende ans leaderboard
-            //antworte dem Client zu seiner Lösung
-        //erwarte QUIT, verlasse schleife dann
-        //erwarte TOP, sende dann die Top 10
+
+
+
+
+
+
+
 
 
 
