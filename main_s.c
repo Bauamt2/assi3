@@ -146,7 +146,7 @@ void create_ScoreTable(){
     for(int i=0; i <sizeof(scoretable);i++){
         scoretable[i] =0;
     }
-    scoretable_ptr=scoretable[0];
+    *scoretable_ptr=scoretable[0];
 }
 
 
@@ -160,6 +160,13 @@ void getScoreTable(int operation){
 void readScoreTable(char *name_pointer){
     semaphoreUsing(LOCK);
     //show all results or only the position of one player?
+    //show the whole scoreTable
+    if(*name_pointer = NULL){
+        for(int i =0;i<10;i++){
+            printf(scoretable_ptr);
+            *scoretable_ptr++;
+        }
+    }
     //TODO Tabelle
     semaphoreUsing(UNLOCK);
 }
