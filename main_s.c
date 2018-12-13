@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
 
 #define NACHRICHTENLAENGE 100
 #define KEY 123458L
@@ -17,6 +18,9 @@
 #define UNLOCK 1
 static struct sembuf semaphore;
 static int semid;
+int sharedID;
+char *shm;
+int *scoretable_ptr;
 //
 
 /*
@@ -87,8 +91,37 @@ int create_semaphore(){
     return 1;
 }
 
+/**Creates a new shared Memory; Prints an error when the creation failed
+ * @return 0 if the creation was successful
+ *
+ */
+int create_sharedMemory(){
+    //TODO Größe anpassen
+    key_t sharedMKey = 42;
+    sharedID = shmget(sharedMKEy,30,IPC_CREAT|0666);
+    if(sharedID <0){
+        printf("Error while getting the shared memory.");
+        return 1;
+    }
+    return 0;
+}
 
-/**Try to chnage the value of the semaphore variable;
+/**Attaches the shared Memory to our data space;
+ * prints an error message, when it occurs an error
+ *@return 0 if the attaching was successful
+ */
+int attachSharedMemory(){
+    shm = shmat(sharedID,NULL,0);
+    if(shm == (char*) -1){
+        printf("Error while attaching shared Memory.");
+        return 1;
+    }
+    return 0;
+}
+
+
+
+/**Try to change the value of the semaphore variable;
  * if there is an error, it would be print out and exit with 1
  * @param operation; 1 for locking the critical section
  * and -1 to unlock the critical section
@@ -106,6 +139,18 @@ int semaphoreUsing(int operation){
     return 1;
 }
 
+/**Creates the scoretable and put it in the shared memory
+ *
+ */
+void create_ScoreTable(){
+    scoretable_ptr = shm;
+    int scoretable [10];
+    for(int i=0; i <sizeof(scoretable);i++){
+        scoretable[i] =0;
+    }
+    *scoretable_ptr=scoretable[0];
+}
+
 
 void getScoreTable(int operation){
 }
@@ -117,6 +162,13 @@ void getScoreTable(int operation){
 void readScoreTable(char *name_pointer){
     semaphoreUsing(LOCK);
     //show all results or only the position of one player?
+    //show the whole scoreTable
+    if(*name_pointer = NULL){
+        for(int i =0;i<10;i++){
+            printf(scoretable_ptr);
+            *scoretable_ptr++;
+        }
+    }
     //TODO Tabelle
     semaphoreUsing(UNLOCK);
 }
