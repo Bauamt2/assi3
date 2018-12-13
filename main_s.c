@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
 
 #define NACHRICHTENLAENGE 100
 #define KEY 123458L
@@ -17,6 +18,7 @@
 #define UNLOCK 1
 static struct sembuf semaphore;
 static int semid;
+int sharedID;
 //
 
 /*
@@ -84,6 +86,21 @@ int create_semaphore(){
     }
     return 1;
 }
+
+/**Creates a new shared Memory; Prints an error when the creation failed
+ * @return 0 if the creation was successful
+ *
+ */
+int create_sharedMemory(){
+    //TODO Größe anpassen
+    sharedID = shmget(KEY,30,IPC_CREAT|0666);
+    if(sharedID <0){
+        printf("Error while getting the shared memory.");
+        return 1;
+    }
+    return 0;
+}
+
 
 
 /**Try to chnage the value of the semaphore variable;
