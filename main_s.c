@@ -19,6 +19,8 @@
 static struct sembuf semaphore;
 static int semid;
 int sharedID;
+char *shm;
+int *scoretable_ptr;
 //
 
 /*
@@ -93,7 +95,8 @@ int create_semaphore(){
  */
 int create_sharedMemory(){
     //TODO Größe anpassen
-    sharedID = shmget(KEY,30,IPC_CREAT|0666);
+    key_t sharedMKey = 42;
+    sharedID = shmget(sharedMKEy,30,IPC_CREAT|0666);
     if(sharedID <0){
         printf("Error while getting the shared memory.");
         return 1;
@@ -101,9 +104,22 @@ int create_sharedMemory(){
     return 0;
 }
 
+/**Attaches the shared Memory to our data space;
+ * prints an error message, when it occurs an error
+ *@return 0 if the attaching was successful
+ */
+int attachSharedMemory(){
+    shm = shmat(sharedID,NULL,0);
+    if(shm == (char*) -1){
+        printf("Error while attaching shared Memory.");
+        return 1;
+    }
+    return 0;
+}
 
 
-/**Try to chnage the value of the semaphore variable;
+
+/**Try to change the value of the semaphore variable;
  * if there is an error, it would be print out and exit with 1
  * @param operation; 1 for locking the critical section
  * and -1 to unlock the critical section
@@ -119,6 +135,18 @@ int semaphoreUsing(int operation){
         exit(1);
     }
     return 1;
+}
+
+/**Creates the scoretable and put it in the shared memory
+ *
+ */
+void create_ScoreTable(){
+    scoretable_ptr = shm;
+    int scoretable [10];
+    for(int i=0; i <sizeof(scoretable);i++){
+        scoretable[i] =0;
+    }
+    scoretable_ptr=scoretable[0];
 }
 
 
