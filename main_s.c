@@ -22,7 +22,17 @@ int sharedID;
 char *shm;
 int *scoretable_ptr;
 //
+int berechnePostfix(recvbuffer){
+    //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
+    return 42;
+}
 
+int kontrolliereSyntax(char* recvbuffer){
+    //TODO: Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
+    //TODO: wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
+    //TODO: nur die 4 erlaubten Operationen +-/* verwendet wurden
+    return 0;
+}
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
  * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
@@ -262,7 +272,7 @@ if(parent == 1){
     int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
     char sendbuffer[101];
-
+    char spielername[100];
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
 
     sprintf(sendbuffer,"%d",erg);//diese beiden Zeilen senden erg
@@ -274,9 +284,36 @@ if(parent == 1){
         send(consocket,sendbuffer,strlen(sendbuffer),0);
     }
 
-    while(1==1){
-        waitRecv(consocket,recvbuffer);
-        printf("Nachricht vom Client: %s\n",recvbuffer);
+    waitRecv(consocket,recvbuffer);//Spielername empfangen und abgespeichert
+    strcpy(spielername,recvbuffer);
+
+
+    while(1==1){//Schleife in der Nachrichten verarbeitet werden
+        waitRecv(consocket,recvbuffer);//Empfängt Nachricht vom Client
+        printf("Nachricht vom Client: %s\n",recvbuffer);//printet diese aus
+
+
+        if(strncmp(recvbuffer,"QUIT",4)== 0){//erkenne disconnect vom Client
+            break;
+
+        }else if(strncmp(recvbuffer,"TOP",3)== 0){//erkenne TOP vom Client
+            //TODO: SENDE ALLE 10 EINTRÄGE IN DER RICHTIGEN REIHENFOLGE
+            // 1. NAME             PUNKTZAHL
+            printf("SPIELER VERLANGT TOP 10\n");
+
+        }else if(kontrolliereSyntax(recvbuffer)){
+            int spielererg = berechnePostfix(recvbuffer);
+            //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
+            //antworte ob er dmait in die top10 gekommen ist oder nicht
+            sprintf(sendbuffer,"Gültige Postfix erkannt: %n Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
+            send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
+
+        }else{
+            sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
+            send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
+        }
+
+
     }
 
 

@@ -9,11 +9,12 @@
 #include <netdb.h>
 //#
 
-void erfrageNamen(){
+void erfrageNamen(char* pname){
     system("clear");
     printf("Willkommen im Sopper Dooper Spiel!\n");
     printf("Verrate mir deinen Namen Spieler!\n");
-    char* name[100];
+
+    scanf("%s",pname);
     //TODO: HIER WEITERPROGGEN
 }
 int pruefeAufgabe(int erg,int e[]){
@@ -27,10 +28,10 @@ int pruefeAufgabe(int erg,int e[]){
     }
     return 1;
 }
-void zeigeAufgaben(int erg, int e[]){
+void zeigeAufgaben(int erg, int e[],char name[],char lastcmd[],char lastanswer[]){
     system("clear");
     printf("Willkommen im Sopper Dooper Spiel!\n");
-    printf("Du hast folgende Zahlen zur Auswahl: ");
+    printf("%s, du hast folgende Zahlen zur Auswahl: ",name);
     for(int i=0;i<7;i++){
         printf("%d ",e[i]);
     }
@@ -40,7 +41,10 @@ void zeigeAufgaben(int erg, int e[]){
     printf("Viel Glück!\n\n\n\n");
     printf("Weitere Befehle:\n");
     printf("TOP : zeigt die bisherige Top 10 an in der auch du schon bald sein kannst!\n");
-    printf("QUIT : es wäre zwar schade, aber mit diesem Befehl kannst du das Spiel beenden\n");
+    printf("QUIT : es wäre zwar schade, aber mit diesem Befehl kannst du das Spiel beenden\n\n\n");
+
+    printf("Spielleiter: %s\n",lastanswer);
+    printf("Ihre letzte Eingabe: %s\n",lastcmd);
 }
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
@@ -154,22 +158,46 @@ if(pruefeAufgabe(erg,e) == 0){
     return -1;
 }
 
+char name[100];
+char *pname = &name[0];
+erfrageNamen(pname);
+//SENDE NAME
+send(mysocket,pname,strlen(pname),0);
 
-erfrageNamen();
-zeigeAufgaben(erg,e);
+zeigeAufgaben(erg,e,pname,"","");
 
 
 
-
-
+    char* input[100];
+    char * lastcmd[100];
+    char * lastanswer[100];
 
 while(1==1){//user eingabeschleife
-    char* input[100];
-    scanf("%s",&input);
+
+    fgets(&input,100,stdin);
+
     if(strncmp(input,"QUIT",4)== 0){
+        send(mysocket,"QUIT",strlen("QUIT"),0);
         break;
+
+    }else if(strncmp(input,"TOP",3)== 0){
+        strcpy(lastcmd,input);
+        send(mysocket,input,strlen(input),0);//Sende befehl an server
+
+        //TODO: EMPFANGE TOP 10
+        //ZEIGE TOP 10 AN
+        //GEHE AUF BEFHEL ZURÜCK ZUM NORMALEN SCREEN
+
+
+    }else{
+        strcpy(lastcmd,input);
+        send(mysocket,input,strlen(input),0);//Sende befehl an server
+        waitRecv(mysocket,recvbuffer);//antwort vom server
+        strcpy(lastanswer,recvbuffer);
     }
-    send(mysocket,input,strlen(input),0);
+
+
+    zeigeAufgaben(erg,e,pname,&lastcmd[0],&lastanswer[0]);
 }
 
 
