@@ -4,10 +4,57 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <netdb.h>
+int sharedID;
+int *shm;
+int *scoretable_ptr;
 //#
+/**Creates a new shared Memory; Prints an error when the creation failed
+ * @return 0 if the creation was successful
+ *
+ */
+int create_sharedMemory(){
+    //TODO Größe anpassen
+    key_t sharedMKey = 42;
+    sharedID = shmget(sharedMKey,30,0666);
+    if(sharedID <0){
+        printf("Error while getting the shared memory.");
+        return 1;
+    }
+    return 0;
+}
+
+/**Attaches the shared Memory to our data space;
+ * prints an error message, when it occurs an error
+ *@return 0 if the attaching was successful
+ */
+int attachSharedMemory(){
+    shm = shmat(sharedID,NULL,0);
+    if(shm == (char*) -1){
+        printf("Error while attaching shared Memory.");
+        return 1;
+    }
+    return 0;
+}
+
+/**Prints the whole Table
+ *
+ */
+void readWholeScoreTable(){
+    //show all results or only the position of one player?
+    //show the whole scoreTable
+    scoretable_ptr =shm;
+        for(int i=0;i<10;i++) {
+            printf(scoretable_ptr[i]);
+        }
+    //TODO Tabelle und spielernamen
+    //TODO sende signal an Server
+
+}
 
 void erfrageNamen(char* pname){
     system("clear");

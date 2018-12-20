@@ -19,7 +19,7 @@
 static struct sembuf semaphore;
 static int semid;
 int sharedID;
-char *shm;
+int *shm;
 int *scoretable_ptr;
 //
 int berechnePostfix(recvbuffer){
@@ -161,28 +161,6 @@ void create_ScoreTable(){
     *scoretable_ptr=scoretable[0];
 }
 
-
-void getScoreTable(int operation){
-}
-
-/**
- * @param *name_pointer points to the first character of the playersname
- * ;is NULL if the user want to see the whole table
- */
-void readScoreTable(char *name_pointer){
-    semaphoreUsing(LOCK);
-    //show all results or only the position of one player?
-    //show the whole scoreTable
-    if(*name_pointer = NULL){
-        for(int i =0;i<10;i++){
-            printf(scoretable_ptr);
-            *scoretable_ptr++;
-        }
-    }
-    //TODO Tabelle
-    semaphoreUsing(UNLOCK);
-}
-
 /**
  * @param points the points the player has
  * @param *name_pointer points to the first character of the playersname
@@ -300,6 +278,13 @@ if(parent == 1){
             //TODO: SENDE ALLE 10 EINTRÄGE IN DER RICHTIGEN REIHENFOLGE
             // 1. NAME             PUNKTZAHL
             printf("SPIELER VERLANGT TOP 10\n");
+            semaphoreUsing(LOCK);
+            send();//Sende signal an client, dass er readScoreTable() ausführen soll
+            //waitRecv();//warte auf signal, dass readScoreTable() beendet ist
+                //warte
+
+
+            semaphoreUsing(UNLOCK);
 
         }else if(kontrolliereSyntax(recvbuffer)){
             int spielererg = berechnePostfix(recvbuffer);
