@@ -24,6 +24,7 @@ int *scoretable_ptr;
 //
 int berechnePostfix(recvbuffer){
     //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
+    //PAT
     return 42;
 }
 
@@ -31,6 +32,7 @@ int kontrolliereSyntax(char* recvbuffer){
     //TODO: Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
     //TODO: wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
     //TODO: nur die 4 erlaubten Operationen +-/* verwendet wurden
+    //JN
     return 0;
 }
 /*
@@ -282,7 +284,7 @@ if(parent == 1){
             send();//Sende signal an client, dass er readScoreTable() ausführen soll
             //waitRecv();//warte auf signal, dass readScoreTable() beendet ist
                 //warte
-
+            //TODO: getZeile(1) für PAT
 
             semaphoreUsing(UNLOCK);
 
@@ -292,7 +294,7 @@ if(parent == 1){
             //antworte ob er dmait in die top10 gekommen ist oder nicht
             sprintf(sendbuffer,"Gültige Postfix erkannt: %n Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
-
+                //TODO: PAT int aktualisiereScoreboard(pielername,score)
         }else{
             sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
