@@ -19,8 +19,14 @@
 static struct sembuf semaphore;
 static int semid;
 int sharedID;
-int *shm;
-int *scoretable_ptr;
+//for each player
+struct Player{
+    int score;
+    char * name;
+};
+struct Player *shm;
+struct Player *scoretable_ptr;
+
 //
 int berechnePostfix(recvbuffer){
     //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
@@ -90,7 +96,7 @@ int create_semaphore(){
     semid = semget(KEY, 0, IPC_PRIVATE);
     if(semid < 0){
         //if semaphore does not exists, create new semaphore
-        //semid = semget(KEY,1,IPC_CREAT| IPC_EXCL|PERM); //TODO: OUTCOMMENTED damits compiliert
+        semid = semget(KEY,1,IPC_CREAT); //TODO: Bei Fehlern auskommentieren
         if(semid <0){
             printf("Cannot create Semaphore.");
             return -1;
@@ -102,15 +108,32 @@ int create_semaphore(){
     }
     return 1;
 }
+/**Try to change the value of the semaphore variable;
+ * if there is an error, it would be print out and exit with 1
+ * @param operation; 1 for locking the critical section
+ * and -1 to unlock the critical section
+ * @return 1, when there are no errors
+ *
+ */
+int semaphoreUsing(int operation){
+    semaphore.sem_op = operation;
+    semaphore.sem_flg = SEM_UNDO;
+    if(semop(semid, &semaphore, 1)== -1){
+        //Fehler abfangen?
+        perror("semop");
+        exit(1);
+    }
+    return 1;
+}
 
-/**Creates a new shared Memory; Prints an error when the creation failed
+/**Creates a new shared Memory with the size for the scoretable;
+ * Prints an error when the creation failed
  * @return 0 if the creation was successful
  *
  */
 int create_sharedMemory(){
-    //TODO Größe anpassen
     key_t sharedMKey = 42;
-    sharedID = shmget(sharedMKey,30,IPC_CREAT|0666);
+    sharedID = shmget(sharedMKey,10* sizeof(struct Player),IPC_CREAT|0666);
     if(sharedID <0){
         printf("Error while getting the shared memory.");
         return 1;
@@ -131,36 +154,24 @@ int attachSharedMemory(){
     return 0;
 }
 
-
-
-/**Try to change the value of the semaphore variable;
- * if there is an error, it would be print out and exit with 1
- * @param operation; 1 for locking the critical section
- * and -1 to unlock the critical section
- * @return 1, when there are no errors
- *
- */
-int semaphoreUsing(int operation){
-    semaphore.sem_op = operation;
-    semaphore.sem_flg = SEM_UNDO;
-    if(semop(semid, &semaphore, 1)== -1){
-        //Fehler abfangen?
-        perror("semop");
-        exit(1);
-    }
-    return 1;
-}
-
 /**Creates the scoretable and put it in the shared memory
  *
  */
 void create_ScoreTable(){
     scoretable_ptr = shm;
-    int scoretable [10];
+    struct Player scoretable [10];
     for(int i=0; i <sizeof(scoretable);i++){
-        scoretable[i] =0;
+        scoretable[i].score =0;
+        scoretable[i].name = " ";
     }
     *scoretable_ptr=scoretable[0];
+}
+
+struct Player* readScoreTable(){
+    semaphoreUsing(LOCK);
+    scoretable_ptr = shm;
+    semaphoreUsing(UNLOCK);
+    return scoretable_ptr;
 }
 
 /**
@@ -253,6 +264,17 @@ if(parent == 1){
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
     char sendbuffer[101];
     char spielername[100];
+    //Create semaphore and shared memory
+    if(create_semaphore()==-1){
+        exit(1);
+    }
+    if(create_semaphore()==1){
+        exit(1);
+    }
+    if(attachSharedMemory()==1){
+        exit(1);
+    }
+
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
 
     sprintf(sendbuffer,"%d",erg);//diese beiden Zeilen senden erg
@@ -280,13 +302,16 @@ if(parent == 1){
             //TODO: SENDE ALLE 10 EINTRÄGE IN DER RICHTIGEN REIHENFOLGE
             // 1. NAME             PUNKTZAHL
             printf("SPIELER VERLANGT TOP 10\n");
-            semaphoreUsing(LOCK);
-            send();//Sende signal an client, dass er readScoreTable() ausführen soll
-            //waitRecv();//warte auf signal, dass readScoreTable() beendet ist
-                //warte
-            //TODO: getZeile(1) für PAT
 
-            semaphoreUsing(UNLOCK);
+            struct Player *scoreTable = readScoreTable(); //get ScoreTable; saved in *scoreTable
+            //TODO: JN Tabelle übergeben bzw ausgeben(s.u.)
+            /*Ausgabe :
+             * printf("Name\tScore");   //Überschrift
+                for(int i=0;i<10;i++){
+                    printf("%c\t%i",scoreTable[i].name,scoreTable[i].score); //eine zeile in der Tabelle
+                }
+            */
+
 
         }else if(kontrolliereSyntax(recvbuffer)){
             int spielererg = berechnePostfix(recvbuffer);
