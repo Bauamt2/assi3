@@ -281,14 +281,27 @@ void create_ScoreTable(){
 }
 
 /**Locks the critical section and gets the score table;after that unlocks the critical section
- * @return pointer to the score table
+ * @return pointer to the output for the user
  *
  */
-struct Player* readScoreTable(){
+char* readScoreTable(){
     semaphoreUsing(LOCK);
+
     scoretable_ptr = shm;
+    char scoreTable[1024];
+    char *output=scoreTable[0];
+    //Title
+    strcat(output,"Name\tScore");
+    //one row in the table
+    for(int i=0;i<10;i++){
+        struct Player p = *(scoretable_ptr+i);
+        strcat(output,p.name);
+        strcat(output,'\t');
+        strcat(output,p.score);
+    }
+
     semaphoreUsing(UNLOCK);
-    return scoretable_ptr;
+    return output;
 }
 
 /**
@@ -298,6 +311,8 @@ struct Player* readScoreTable(){
 void writeScoreTable(int points, char *name_pointer){
     //schreibe einen neuen wert in die Tabelle;falls möglich
     semaphoreUsing(LOCK);
+    scoretable_ptr = shm;
+    for(int i=0;)
     semaphoreUsing(UNLOCK);
 }
 
@@ -420,14 +435,9 @@ if(parent == 1){
             // 1. NAME             PUNKTZAHL
             printf("SPIELER VERLANGT TOP 10\n");
 
-            struct Player *scoreTable = readScoreTable(); //get ScoreTable; saved in *scoreTable
-            //TODO: JN Tabelle übergeben bzw ausgeben(s.u.)
-            /*Ausgabe :
-             * printf("Name\tScore");   //Überschrift
-                for(int i=0;i<10;i++){
-                    printf("%c\t%i",scoreTable[i].name,scoreTable[i].score); //eine zeile in der Tabelle
-                }
-            */
+            struct Player *scoreTable = readScoreTable(); //get ScoreTable as correct output; saved in *scoreTable
+            //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
+
 
 
         }else if(kontrolliereSyntax(recvbuffer)){
