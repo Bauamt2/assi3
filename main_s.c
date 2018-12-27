@@ -27,6 +27,7 @@ struct Player{
 struct Player *shm;
 struct Player *scoretable_ptr;
 
+
 /**Checks if the char is a operation symbol like +,*,-,/
  * @param symbol
  * @return 1 if it is a opertion symbol
@@ -83,50 +84,72 @@ char* deleteWhitespace(char* postfix){
  * @return result
  */
 int berechnePostfix(char* recvbuffer){
-    //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
     int result =0;
     //Links,rechts,mitte
     char *postfix = deleteWhitespace(recvbuffer);
+
     int firstnumber=0;
     int secondnumber=0;
+    int stack[7];
+    int top = -1;
 
     while(*postfix!='\0'){
         if(isOperationsymbol(*postfix)){
-            //find n1 and n2
-            firstnumber= atoi(*(postfix-2));
-            secondnumber=atoi(*(postfix-1));
-                //if n1 is not found(n1 ==0), use result
-                if(firstnumber==0){
-                    firstnumber=result;
-                }
+            //pull n1 and n2 from the stack
+            firstnumber= stack[top--]; //pull
+            secondnumber=stack[top--];  //pull
+
             //which operation?
-            if(*postfix == '+'){
-                result = firstnumber+secondnumber;
+            //calculate result
+            switch(*postfix){
+                case '+':
+                    result = firstnumber+secondnumber;
+                    break;
+                case '-':
+                    result = firstnumber-secondnumber;
+                    break;
+                case '*':
+                    result = firstnumber*secondnumber;
+                    break;
+                case '/':
+                    result = firstnumber/secondnumber;
+                    break;
+                default:
+                    break;
             }
-            if(*postfix == '-'){
-                result = firstnumber-secondnumber;
-            }
-            if(*postfix == '*'){
-                result = firstnumber*secondnumber;
-            }
-            if(*postfix == '/'){
-                result = firstnumber/secondnumber;
-            }
-                //calculate result,set firstnumber to zero
+            stack[++top]= result; //push result on the stack
+        }
+        else{
+            stack[++top] = *postfix -'0'; //push number on the stack
         }
         postfix++;
     }
-    //PAT
+    result = stack[top];
     return result;
 }
 
-
+/**Calculate the score for the given input
+ * @param recvbuffer the input
+ * @param correctResult the correct Result
+ * @return -1, if the input is syntactical wrong; or 100- |difference between the user result and the correct result|
+ *
+ */
+int getUsersScore(char* recvbuffer,int correctResult){
+    int result = berechnePostfix(recvbuffer);
+    int difference=correctResult-result;
+    if(difference >=0){
+        return 100-difference;
+    }
+    else
+        return 100-(difference*-1);
+}
 
 
 int kontrolliereSyntax(char* recvbuffer){
     //TODO: Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
     //TODO: wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
     //TODO: nur die 4 erlaubten Operationen +-/* verwendet wurden
+    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat
     //JN
     return 0;
 }
@@ -172,6 +195,7 @@ int efuellen(int e[],char estring[]){
 
 return 1;
 }
+
 /**Tries to get the semaphore with the KEY;
  * if the semaphore doesnt exists, a new one is created;
  * The semaphoreid is saved in semid.
@@ -256,6 +280,10 @@ void create_ScoreTable(){
     *scoretable_ptr=scoretable[0];
 }
 
+/**Locks the critical section and gets the score table;after that unlocks the critical section
+ * @return pointer to the score table
+ *
+ */
 struct Player* readScoreTable(){
     semaphoreUsing(LOCK);
     scoretable_ptr = shm;
@@ -403,7 +431,7 @@ if(parent == 1){
 
 
         }else if(kontrolliereSyntax(recvbuffer)){
-            int spielererg = berechnePostfix(recvbuffer);
+            int spielererg = getUsersScore(recvbuffer,erg);
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
             //antworte ob er dmait in die top10 gekommen ist oder nicht
             sprintf(sendbuffer,"Gültige Postfix erkannt: %n Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
