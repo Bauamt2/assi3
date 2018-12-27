@@ -27,12 +27,101 @@ struct Player{
 struct Player *shm;
 struct Player *scoretable_ptr;
 
-//
-int berechnePostfix(recvbuffer){
-    //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
-    //PAT
-    return 42;
+/**Checks if the char is a operation symbol like +,*,-,/
+ * @param symbol
+ * @return 1 if it is a opertion symbol
+ *
+ */
+int isOperationsymbol(char symbol){
+    if(symbol == '+'|| symbol == '-'||symbol=='*' || symbol=='/'){
+        return 1;
+    }
+    return 0;
 }
+
+/**Deletes all the whitespace between the numbers and the symbols
+ *@param postfix a char array in postfix notation
+ *@return a pointer to new char array without whitespace and each number in one index
+ *
+ */
+char* deleteWhitespace(char* postfix){
+    //Length of the input
+    int length=0;
+    while(*postfix != '\0') {
+        length++;
+    }
+    //array for the new input without whitespace
+    char input[length];
+    int count =0;
+    //delete all whitespace
+    char* start = postfix;
+    for(int i=0;*(postfix+i)!='\0';i++){
+        if(*postfix+i == ' '){
+            //create temp array which contains the character before ' '
+            char temp[postfix - start];
+            for (int i = 0; i < sizeof(temp); i++) {
+                temp[i] = *start + i;
+            }
+            //is it a operationsymbol?
+            if(isOperationsymbol(temp[0])){
+                input[count]= *postfix+i;
+            }
+                //cast temp array to int
+            else {
+                input[count] = atoi(temp);
+            }
+            count++;
+            //point to the new start symbol
+            start = postfix+i+1;
+        }
+    }
+    return *input;
+}
+
+/**Calculate the result of the given postfix notation
+ * @param recvbuffer pointer to the first symbol of the postfix notation
+ * @return result
+ */
+int berechnePostfix(char* recvbuffer){
+    //TODO: Berechnet das Ergebnis der bereits als gültig geprüften Postfix notation und gibt dieses zurück.
+    int result =0;
+    //Links,rechts,mitte
+    char *postfix = deleteWhitespace(recvbuffer);
+    int firstnumber=0;
+    int secondnumber=0;
+
+    while(*postfix!='\0'){
+        if(isOperationsymbol(*postfix)){
+            //find n1 and n2
+            firstnumber= atoi(*(postfix-2));
+            secondnumber=atoi(*(postfix-1));
+                //if n1 is not found(n1 ==0), use result
+                if(firstnumber==0){
+                    firstnumber=result;
+                }
+            //which operation?
+            if(*postfix == '+'){
+                result = firstnumber+secondnumber;
+            }
+            if(*postfix == '-'){
+                result = firstnumber-secondnumber;
+            }
+            if(*postfix == '*'){
+                result = firstnumber*secondnumber;
+            }
+            if(*postfix == '/'){
+                result = firstnumber/secondnumber;
+            }
+                //calculate result,set firstnumber to zero
+        }
+        postfix++;
+    }
+    //PAT
+    return result;
+}
+
+
+
 
 int kontrolliereSyntax(char* recvbuffer){
     //TODO: Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
