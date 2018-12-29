@@ -435,7 +435,7 @@ if(parent == 1){
             // 1. NAME             PUNKTZAHL
             printf("SPIELER VERLANGT TOP 10\n");
 
-            struct Player *scoreTable = readScoreTable(); //get ScoreTable as correct output; saved in *scoreTable
+            char *scoreTable = readScoreTable(); //get ScoreTable as correct output; saved in *scoreTable
             //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 
 
