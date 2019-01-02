@@ -60,7 +60,7 @@ int isOperationsymbol(char symbol){
  */
 char* deleteWhitespace(char* postfix){
     //Length of the input
-    printf("BEGINNE DELETEW\n");
+    printf("BEGINNE DELETEW : %s\n",postfix);
     int length=0;
     while(*postfix != '\0') {
 
@@ -182,7 +182,7 @@ int kontrolliereSyntax(char* recvbuffer, int e[]){
 
 printf("ich pruefe jetzt: %s\n",pruefe);
 while(1) {
-    if (isOperationsymbol(pruefe[i])) {
+    if (isOperationsymbol(pruefe[i]) || pruefe[i] == ' ') {
         i++;
     } else if (atoi(pruefe[i]) >= 1 && atoi(pruefe[i]) <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
         int it = 1;
