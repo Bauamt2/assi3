@@ -85,7 +85,8 @@ char* deleteWhitespace(char* postfix){
             }
                 //cast temp array to int
             else {
-                input[count] = atoi(temp);
+                int number = atoi(temp);
+                input[count] = number + '0';
             }
             count++;
             //point to the new start symbol
@@ -93,7 +94,9 @@ char* deleteWhitespace(char* postfix){
         }
     }
     printf("FERTIG DELETE: %s\n",input);
-    return *input;
+
+    char *input_ptr = input;
+    return input_ptr;
 }
 
 /**Calculate the result of the given postfix notation
@@ -277,7 +280,7 @@ int create_semaphore(){
             printf("Cannot create Semaphore.");
             return -1;
         }
-        if(semctl(semid,0,SETVAL,(int) 1)==-1){
+        if(semctl(semid,1,SETVAL,(int) 1)==-1){             //erster semaphore wird mit 1 initalisiert
             printf("Cannot initialize semaphore with one.");
             return -1;
         }
@@ -420,6 +423,20 @@ for(int i=0;i<7;i++){
     printf("Parameter OK\n");
 //Jetzt muss der server auf Verbindungen warten
 
+    //Create semaphore and shared memory
+
+    if(create_semaphore()==-1){
+        exit(1);
+    }
+
+    if(create_sharedMemory()==1){
+        exit(1);
+    }
+
+    if(attachSharedMemory()==1){
+        exit(1);
+    }
+
 char *nachricht = "Willkommen client!";
 
 struct sockaddr_in dest;
@@ -459,20 +476,8 @@ if(parent == 1){
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
     char sendbuffer[101];
     char spielername[100];
-    //Create semaphore and shared memory
-   /* printf("p1\n");//TODO: AUSKOMMENTIERT WEGEN WHATSAPP
-    if(create_semaphore()==-1){
-        exit(1);
-    }
-    printf("p2\n");
-    if(create_semaphore()==1){
-        exit(1);
-    }
-    printf("p3\n");
-    if(attachSharedMemory()==1){
-        exit(1);
-    }
-*/
+
+
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
 
     sprintf(sendbuffer,"%d",erg);//diese beiden Zeilen senden erg
