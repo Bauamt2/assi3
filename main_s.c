@@ -28,6 +28,19 @@ struct Player *shm;
 struct Player *scoretable_ptr;
 
 
+int erlaubteZahl(int temp,int e[]){
+
+    for(int i=0;i<7;i++){
+
+        if(temp == e[i]){
+            return 1;
+        }
+
+    }
+
+    return 0;
+}
+
 /**Checks if the char is a operation symbol like +,*,-,/
  * @param symbol
  * @return 1 if it is a opertion symbol
@@ -47,9 +60,12 @@ int isOperationsymbol(char symbol){
  */
 char* deleteWhitespace(char* postfix){
     //Length of the input
+    printf("BEGINNE DELETEW\n");
     int length=0;
     while(*postfix != '\0') {
+
         length++;
+        postfix++;//habe diese Zeile ergänzt, sonst endlosschleife
     }
     //array for the new input without whitespace
     char input[length];
@@ -76,6 +92,7 @@ char* deleteWhitespace(char* postfix){
             start = postfix+i+1;
         }
     }
+    printf("FERTIG DELETE: %s\n",input);
     return *input;
 }
 
@@ -145,13 +162,59 @@ int getUsersScore(char* recvbuffer,int correctResult){
 }
 
 
-int kontrolliereSyntax(char* recvbuffer){
-    //TODO: Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
-    //TODO: wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
-    //TODO: nur die 4 erlaubten Operationen +-/* verwendet wurden
-    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat
+int kontrolliereSyntax(char* recvbuffer, int e[]){
+    //Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
+    // wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
+    // nur die 4 erlaubten Operationen +-/* verwendet wurden
+    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat ;YO, danke :D
     //JN
-    return 0;
+    int i = 0;
+    int korrekt= 1;
+    char temp[4];
+
+    if(recvbuffer[1] == '\0'){
+        return 0;
+    }
+    char* pruefe = deleteWhitespace(recvbuffer);
+
+printf("ich pruefe jetzt: %s\n",pruefe);
+while(1) {
+    if (isOperationsymbol(pruefe[i])) {
+        i++;
+    } else if (atoi(pruefe[i]) >= 1 && atoi(pruefe[i]) <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
+        int it = 1;
+        temp[0] = pruefe[i];
+        while (1) {
+
+            if (atoi(pruefe[i + it]) >= 1 && atoi(pruefe[i + it]) <= 9) {//prüft ob ZAhl 1-9
+                temp[it] = pruefe[i + it];
+                it++;
+                if (it > 3) {
+                    return 0;//Zahl ist >4 Stellen lang, Fehler!
+                }
+            } else {
+                temp[it] = '\0';
+                break;
+            }//ab dieser Stelle beinhaltet temp eine Benutzer Zahl
+            //prüfe ob diese Zahl genutzt werden darf mit array e[]
+
+
+        }
+        i = i + it;
+        if (!erlaubteZahl(atoi(temp), e)) {
+            return 0;//Unerlaubte ZAhl eingegeben
+        }
+
+    } else if (pruefe[i] == '\0') {
+        return 1;//EIngabe durchgearbeitet ohne Fehler
+    } else {
+        return 0;//unbekanntes Zeichen vorhanden
+    }
+
+}
+
+
+    return korrekt;
 }
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
@@ -312,7 +375,7 @@ void writeScoreTable(int points, char *name_pointer){
     //schreibe einen neuen wert in die Tabelle;falls möglich
     semaphoreUsing(LOCK);
     scoretable_ptr = shm;
-    for(int i=0;)
+    //for(int i=0;) TODO: Ausgeklammert wegen Syntaxfehler
     semaphoreUsing(UNLOCK);
 }
 
@@ -397,16 +460,19 @@ if(parent == 1){
     char sendbuffer[101];
     char spielername[100];
     //Create semaphore and shared memory
+   /* printf("p1\n");//TODO: AUSKOMMENTIERT WEGEN WHATSAPP
     if(create_semaphore()==-1){
         exit(1);
     }
+    printf("p2\n");
     if(create_semaphore()==1){
         exit(1);
     }
+    printf("p3\n");
     if(attachSharedMemory()==1){
         exit(1);
     }
-
+*/
     printf("Verbindung gestartet von: %s\n",inet_ntoa(dest.sin_addr));//Zeige Ip des Clients an
 
     sprintf(sendbuffer,"%d",erg);//diese beiden Zeilen senden erg
@@ -440,14 +506,17 @@ if(parent == 1){
 
 
 
-        }else if(kontrolliereSyntax(recvbuffer)){
+        }else if(kontrolliereSyntax(recvbuffer,e)){
+            printf("1p\n");
             int spielererg = getUsersScore(recvbuffer,erg);
+            printf("2p\n");
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
             //antworte ob er dmait in die top10 gekommen ist oder nicht
             sprintf(sendbuffer,"Gültige Postfix erkannt: %n Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
                 //TODO: PAT int aktualisiereScoreboard(pielername,score)
         }else{
+            printf("3p\n");
             sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
         }
