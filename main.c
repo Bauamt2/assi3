@@ -9,6 +9,51 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <errno.h>
+/*int sharedID;
+//for each player
+struct Player{
+    int score;
+    char name[10];
+};
+int *shm;
+
+/**Creates a new shared Memory with the size for the scoretable;
+ * Prints an error when the creation failed
+ * @return 0 if the creation was successful
+ *
+ */
+/*int create_sharedMemory(){
+    printf("Create shared memory\n");
+    //key_t sharedMKey = 42;
+    key_t sharedMKey = ftok("main_s.c",'1');
+    sharedID = shmget(sharedMKey,10* sizeof(struct Player),0666);
+    if(sharedID <0){
+        printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
+        printf("Error while getting the shared memory.\n");
+        return -1;
+    }
+    return 0;
+}
+
+/**Attaches the shared Memory to our data space;
+ * prints an error message, when it occurs an error
+ *@return 0 if the attaching was successful
+ */
+/*int attachSharedMemory(){
+    printf("Attach shared memory\n");
+    shm = shmat(sharedID, NULL, 0);
+
+    if (shm ==  (int *)-1) {
+        printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
+        printf("Error while attaching shared Memory.\n");
+        return -1;
+    }
+
+
+    return 0;
+}
+*/
 
 void erfrageNamen(char* pname){
     system("clear");
@@ -110,7 +155,16 @@ int port=0;
         return -1;
     }
 
-
+    //connection to shared memory
+   /* printf("p2\n");
+    if(create_sharedMemory()==-1){
+        exit(1);
+    }
+    printf("p3\n");
+    if(attachSharedMemory()==-1){
+        exit(1);
+    }
+    */
 //Client kann nun connecten mit folgenden Werten:
     printf("Port: %d\n",port);
     printf("Hostname: %s\n",hostname);

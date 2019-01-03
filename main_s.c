@@ -23,7 +23,7 @@ int sharedID;
 //for each player
 struct Player{
     int score;
-    char * name;
+    char name[10];
 };
 union semun{
     int val; //Value for SETVALUE
@@ -336,6 +336,7 @@ int create_sharedMemory(){
     key_t sharedMKey = ftok("main_s.c",'1');
     sharedID = shmget(sharedMKey,10* sizeof(struct Player),IPC_CREAT|0666);
     if(sharedID <0){
+        printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
         printf("Error while getting the shared memory.\n");
         return -1;
     }
@@ -364,14 +365,28 @@ int attachSharedMemory(){
  *
  */
 void create_ScoreTable(){
-    printf("Create scoretable");
-    scoretable_ptr = (struct Player*)shm;
+
+
+    semaphoreUsing(LOCK);
     struct Player scoretable [10];
-    for(int i=0; i <sizeof(scoretable);i++){
-        scoretable[i].score =0;
-        scoretable[i].name = " ";
+    memcpy(scoretable,shm,sizeof(shm));
+
+    for(int i=0; i < 10;i++){
+
+        //struct Player tempPlayer{0," "};
+        scoretable[i].score = 0;
+        char *name_ptr=scoretable[i].name;
+        memset(name_ptr,' ',9);
+        scoretable[i].name[9] = '\0';
+        printf("Name : %s; Score %i\n",scoretable[i].name,scoretable[i].score);
     }
-    *scoretable_ptr=scoretable[0];
+
+
+
+    memcpy(shm,scoretable,sizeof(scoretable));
+
+    semaphoreUsing(UNLOCK);
+
 }
 
 /**Locks the critical section and gets the score table;after that unlocks the critical section
@@ -380,23 +395,38 @@ void create_ScoreTable(){
  */
 char* readScoreTable(){
     semaphoreUsing(LOCK);
+    printf("Read Score table\n");
+    /*struct Player scoretable[10];
+    memcpy(scoretable,shm,sizeof(shm));
+    printf("Copy success\n");
+    char output[1024];
 
-    scoretable_ptr = (struct Player*)shm;
-    char scoreTable[1024];
-    char *output=scoreTable;
     //Title
-    strcat(output,"Name\tScore");
+    strcat(output,"Name\tScore\n");
+    printf("Name\tScore\n");
     //one row in the table
     for(int i=0;i<10;i++){
-        struct Player p = *(scoretable_ptr+i);
-        strcat(output,p.name);
+
+        printf("Name : %s; Score %i\n",scoretable[i].name,scoretable[i].score);
+        strcat(output,scoretable[i].name);
+        printf("Your string: %s\n",output);
         strcat(output,"\t");
-        //char  charscore = p.score;
-        //strcat(output,charscore);
+        char  charscore = scoretable[i].score+'0';
+        strcat(output,charscore);
+        strcat(output,"\n");
+    }
+    char * output_ptr;
+    output_ptr = output;
+    semaphoreUsing(UNLOCK);
+    //printf("Your string: %s\n",output_ptr);
+    return output_ptr;
+     */
+    struct Player scoretable[10];
+    memcpy(scoretable,shm,sizeof(shm));
+    for(int i=0;i<10;i++){
+        printf("Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
     }
 
-    semaphoreUsing(UNLOCK);
-    return output;
 }
 
 /**
@@ -469,7 +499,8 @@ for(int i=0;i<7;i++){
     }
 
     //create the scoretable
-    //create_ScoreTable();
+    create_ScoreTable();
+    readScoreTable();
 
 char *nachricht = "Willkommen client!";
 
