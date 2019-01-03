@@ -282,9 +282,10 @@ return 1;
 int create_semaphore(){
 
     //try to get existing semaphore
-
+;
 
     semid = semget(KEY, 0, IPC_PRIVATE);
+
     if(semid < 0){
         //if semaphore does not exists, create new semaphore
 
@@ -304,7 +305,7 @@ int create_semaphore(){
         }
     }
 
-    return 1;
+    return 0;
 }
 /**Try to change the value of the semaphore variable;
  * if there is an error, it would be print out and exit with 1
@@ -330,12 +331,12 @@ int semaphoreUsing(int operation){
  *
  */
 int create_sharedMemory(){
-    printf("Create shared memory");
+    printf("Create shared memory\n");
     //key_t sharedMKey = 42;
     key_t sharedMKey = ftok("main_s.c",'1');
     sharedID = shmget(sharedMKey,10* sizeof(struct Player),IPC_CREAT|0666);
     if(sharedID <0){
-        printf("Error while getting the shared memory.");
+        printf("Error while getting the shared memory.\n");
         return -1;
     }
     return 0;
@@ -346,16 +347,16 @@ int create_sharedMemory(){
  *@return 0 if the attaching was successful
  */
 int attachSharedMemory(){
-    printf("Attach shared memory");
+    printf("Attach shared memory\n");
     shm = shmat(sharedID, NULL, 0);
 
     if (shm ==  (int *)-1) {
         printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
-        printf("Error while attaching shared Memory.");
+        printf("Error while attaching shared Memory.\n");
         return -1;
     }
 
-    printf("Success");
+
     return 0;
 }
 
@@ -458,11 +459,11 @@ for(int i=0;i<7;i++){
     }
     //semctl(semid,0,IPC_RMID);
     //shmctl(sharedID, IPC_RMID,NULL);
-    printf("p2");
+    printf("p2\n");
     if(create_sharedMemory()==-1){
         exit(1);
     }
-    printf("p3");
+    printf("p3\n");
     if(attachSharedMemory()==-1){
         exit(1);
     }
