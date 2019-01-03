@@ -11,6 +11,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#include <errno.h>
 
 #define NACHRICHTENLAENGE 100
 #define KEY 123458L
@@ -24,7 +25,14 @@ struct Player{
     int score;
     char * name;
 };
-struct Player *shm;
+union semun{
+    int val; //Value for SETVALUE
+    struct semid_ds  *buf;  //Buffer for IPC_STAT,IPC_SET
+    unsigned short  *array; //Array for GETALL,SETALL
+    struct seminfo *__buf; //Buffer for IPC_INFO
+
+};
+int *shm;
 struct Player *scoretable_ptr;
 
 
@@ -67,6 +75,7 @@ char* deleteWhitespace(char* postfix){
         length++;
         postfix++;//habe diese Zeile ergänzt, sonst endlosschleife
     }
+    printf("%i",length);
     //array for the new input without whitespace
     char input[length];
     int count =0;
@@ -86,6 +95,7 @@ char* deleteWhitespace(char* postfix){
                 //cast temp array to int
             else {
                 int number = atoi(temp);
+                printf("%i",number);
                 input[count] = number + '0';
             }
             count++;
@@ -184,12 +194,12 @@ printf("ich pruefe jetzt: %s\n",pruefe);
 while(1) {
     if (isOperationsymbol(pruefe[i]) || pruefe[i] == ' ') {
         i++;
-    } else if (atoi(pruefe[i]) >= 1 && atoi(pruefe[i]) <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
+    } else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
         int it = 1;
         temp[0] = pruefe[i];
         while (1) {
 
-            if (atoi(pruefe[i + it]) >= 1 && atoi(pruefe[i + it]) <= 9) {//prüft ob ZAhl 1-9
+            if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
                 temp[it] = pruefe[i + it];
                 it++;
                 if (it > 3) {
@@ -272,19 +282,28 @@ return 1;
 int create_semaphore(){
 
     //try to get existing semaphore
+
+
     semid = semget(KEY, 0, IPC_PRIVATE);
     if(semid < 0){
         //if semaphore does not exists, create new semaphore
-        semid = semget(KEY,1,IPC_CREAT); //TODO: Bei Fehlern auskommentieren
-        if(semid <0){
-            printf("Cannot create Semaphore.");
+
+
+        semid = semget(KEY,1,IPC_CREAT|0666);
+        if(semid ==-1){
+            printf("Cannot create Semaphore.\n");
             return -1;
         }
-        if(semctl(semid,1,SETVAL,(int) 1)==-1){             //erster semaphore wird mit 1 initalisiert
-            printf("Cannot initialize semaphore with one.");
+
+        union semun arg;
+        arg.val = 1;
+        if(semctl(semid,0,SETVAL,arg)==-1){             //erster semaphore wird mit 1 initalisiert
+            printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
+            printf("Cannot initialize semaphore with one.\n");
             return -1;
         }
     }
+
     return 1;
 }
 /**Try to change the value of the semaphore variable;
@@ -311,11 +330,13 @@ int semaphoreUsing(int operation){
  *
  */
 int create_sharedMemory(){
-    key_t sharedMKey = 42;
+    printf("Create shared memory");
+    //key_t sharedMKey = 42;
+    key_t sharedMKey = ftok("main_s.c",'1');
     sharedID = shmget(sharedMKey,10* sizeof(struct Player),IPC_CREAT|0666);
     if(sharedID <0){
         printf("Error while getting the shared memory.");
-        return 1;
+        return -1;
     }
     return 0;
 }
@@ -325,11 +346,16 @@ int create_sharedMemory(){
  *@return 0 if the attaching was successful
  */
 int attachSharedMemory(){
-    shm = shmat(sharedID,NULL,0);
-    if(shm == (char*) -1){
+    printf("Attach shared memory");
+    shm = shmat(sharedID, NULL, 0);
+
+    if (shm ==  (int *)-1) {
+        printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
         printf("Error while attaching shared Memory.");
-        return 1;
+        return -1;
     }
+
+    printf("Success");
     return 0;
 }
 
@@ -337,7 +363,8 @@ int attachSharedMemory(){
  *
  */
 void create_ScoreTable(){
-    scoretable_ptr = shm;
+    printf("Create scoretable");
+    scoretable_ptr = (struct Player*)shm;
     struct Player scoretable [10];
     for(int i=0; i <sizeof(scoretable);i++){
         scoretable[i].score =0;
@@ -353,17 +380,18 @@ void create_ScoreTable(){
 char* readScoreTable(){
     semaphoreUsing(LOCK);
 
-    scoretable_ptr = shm;
+    scoretable_ptr = (struct Player*)shm;
     char scoreTable[1024];
-    char *output=scoreTable[0];
+    char *output=scoreTable;
     //Title
     strcat(output,"Name\tScore");
     //one row in the table
     for(int i=0;i<10;i++){
         struct Player p = *(scoretable_ptr+i);
         strcat(output,p.name);
-        strcat(output,'\t');
-        strcat(output,p.score);
+        strcat(output,"\t");
+        //char  charscore = p.score;
+        //strcat(output,charscore);
     }
 
     semaphoreUsing(UNLOCK);
@@ -377,7 +405,7 @@ char* readScoreTable(){
 void writeScoreTable(int points, char *name_pointer){
     //schreibe einen neuen wert in die Tabelle;falls möglich
     semaphoreUsing(LOCK);
-    scoretable_ptr = shm;
+    scoretable_ptr = (struct Player*)shm;
     //for(int i=0;) TODO: Ausgeklammert wegen Syntaxfehler
     semaphoreUsing(UNLOCK);
 }
@@ -424,18 +452,23 @@ for(int i=0;i<7;i++){
 //Jetzt muss der server auf Verbindungen warten
 
     //Create semaphore and shared memory
-
+    printf("p1\n");
     if(create_semaphore()==-1){
         exit(1);
     }
-
-    if(create_sharedMemory()==1){
+    //semctl(semid,0,IPC_RMID);
+    //shmctl(sharedID, IPC_RMID,NULL);
+    printf("p2");
+    if(create_sharedMemory()==-1){
+        exit(1);
+    }
+    printf("p3");
+    if(attachSharedMemory()==-1){
         exit(1);
     }
 
-    if(attachSharedMemory()==1){
-        exit(1);
-    }
+    //create the scoretable
+    //create_ScoreTable();
 
 char *nachricht = "Willkommen client!";
 
@@ -517,7 +550,7 @@ if(parent == 1){
             printf("2p\n");
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
             //antworte ob er dmait in die top10 gekommen ist oder nicht
-            sprintf(sendbuffer,"Gültige Postfix erkannt: %n Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
+            sprintf(sendbuffer,"Gültige Postfix erkannt: %i Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
                 //TODO: PAT int aktualisiereScoreboard(pielername,score)
         }else{
@@ -549,6 +582,7 @@ if(parent == 1){
 //ipcrm -M;
 //ipcrm -s;
 
+//TODO detach shared memory shmdt
 
 
     return 0;
