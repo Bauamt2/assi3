@@ -68,45 +68,67 @@ int isOperationsymbol(char symbol){
  */
 char* deleteWhitespace(char* postfix){
     //Length of the input
-    printf("BEGINNE DELETEW : %s\n",postfix);
-    int length=0;
-    while(*postfix != '\0') {
+    printf("BEGINNE DELETE :%s\n",postfix);
+    int length=1;
+
+    for(int i=0;*(postfix+i) != '\0';i++) {
 
         length++;
-        postfix++;//habe diese Zeile ergänzt, sonst endlosschleife
     }
-    printf("%i",length);
+    printf("%i\n",length);
     //array for the new input without whitespace
     char input[length];
-    int count =0;
+
+
     //delete all whitespace
-    char* start = postfix;
-    for(int i=0;*(postfix+i)!='\0';i++){
-        if(*postfix+i == ' '){
+    int count =0;
+    char* start;
+    start =postfix;
+
+    while(1){
+
+        if(*postfix == ' ' || *postfix == '\0'){
             //create temp array which contains the character before ' '
-            char temp[postfix - start];
-            for (int i = 0; i < sizeof(temp); i++) {
+            int tempLength= postfix -start;
+            char temp[tempLength];
+
+            for (int i = 0; i < tempLength; i++) {
                 temp[i] = *start + i;
             }
+
             //is it a operationsymbol?
             if(isOperationsymbol(temp[0])){
-                input[count]= *postfix+i;
+                input[count]= temp[0];
+
             }
                 //cast temp array to int
             else {
                 int number = atoi(temp);
-                printf("%i",number);
                 input[count] = number + '0';
             }
             count++;
-            //point to the new start symbol
-            start = postfix+i+1;
-        }
-    }
-    printf("FERTIG DELETE: %s\n",input);
+            if(*postfix == '\0'){
 
-    char *input_ptr = input;
-    return input_ptr;
+                break;
+            }
+
+            //point to the new start symbol
+            start = postfix + 1;
+
+        }
+
+        postfix++;
+    }
+
+    //letztes zeichen
+
+    input[count] = '\0';
+    printf("FERTIG DELETE:%s\n",input);
+
+    char *input_ptr;
+    input_ptr=input;
+
+    return strdup(input_ptr);
 }
 
 /**Calculate the result of the given postfix notation
@@ -116,11 +138,17 @@ char* deleteWhitespace(char* postfix){
 int berechnePostfix(char* recvbuffer){
     int result =0;
     //Links,rechts,mitte
-    char *postfix = deleteWhitespace(recvbuffer);
+    char *postfix;
+    char *free_ptr;
+    postfix=deleteWhitespace(recvbuffer);
+    free_ptr = postfix;
+    printf("test:%i\n",postfix[0]=='1');
+
 
     int firstnumber=0;
     int secondnumber=0;
-    int stack[7];
+    int stack[7]={0}; //initalize all elements to zero
+
     int top = -1;
 
     while(*postfix!='\0'){
@@ -152,9 +180,13 @@ int berechnePostfix(char* recvbuffer){
         else{
             stack[++top] = *postfix -'0'; //push number on the stack
         }
+
+
         postfix++;
     }
     result = stack[top];
+    free(free_ptr);
+    printf("Result: %i\n",result);
     return result;
 }
 
@@ -487,8 +519,6 @@ for(int i=0;i<7;i++){
     if(create_semaphore()==-1){
         exit(1);
     }
-    //semctl(semid,0,IPC_RMID);
-    //shmctl(sharedID, IPC_RMID,NULL);
     printf("p2\n");
     if(create_sharedMemory()==-1){
         exit(1);
@@ -501,6 +531,11 @@ for(int i=0;i<7;i++){
     //create the scoretable
     create_ScoreTable();
     readScoreTable();
+
+    char temp[6]={'1',' ','2',' ','+','\0'};
+    char * test;
+    test=temp;
+    berechnePostfix(test);
 
 char *nachricht = "Willkommen client!";
 
