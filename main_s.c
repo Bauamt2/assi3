@@ -235,6 +235,7 @@ while(1) {
                 temp[it] = pruefe[i + it];
                 it++;
                 if (it > 3) {
+                    free(pruefe);
                     return 0;//Zahl ist >4 Stellen lang, Fehler!
                 }
             } else {
@@ -247,12 +248,15 @@ while(1) {
         }
         i = i + it;
         if (!erlaubteZahl(atoi(temp), e)) {
+            free(pruefe);
             return 0;//Unerlaubte ZAhl eingegeben
         }
 
     } else if (pruefe[i] == '\0') {
+        free(pruefe);
         return 1;//EIngabe durchgearbeitet ohne Fehler
     } else {
+        free(pruefe);
         return 0;//unbekanntes Zeichen vorhanden
     }
 
@@ -612,16 +616,16 @@ if(parent == 1){
 
 
         }else if(kontrolliereSyntax(recvbuffer,e)){
-            printf("1p\n");
+            printf("syntax gültig\n");
             int spielererg = getUsersScore(recvbuffer,erg);
-            printf("2p\n");
+            printf("erg: %n\n",spielererg);
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
             //antworte ob er dmait in die top10 gekommen ist oder nicht
             sprintf(sendbuffer,"Gültige Postfix erkannt: %i Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
                 //TODO: PAT int aktualisiereScoreboard(pielername,score)
         }else{
-            printf("3p\n");
+            printf("syntax ungültig\n");
             sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
         }
