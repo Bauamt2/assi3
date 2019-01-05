@@ -272,29 +272,37 @@ char * readScoreTableLine(int line){
         struct Player scoretable[10];
         memcpy(scoretable,shm,sizeof(scoretable));
 
+        //create score array
         char *score_ptr = convertIntToChar(scoretable[line].score);
-        char score[4];
+        int count=0;
+        char *count_ptr;
+        count_ptr=score_ptr;
+        for(int i=0;*count_ptr!='\0';i++){
+            count++;
+            count_ptr++;
+        }
+        char score[count+1];
+
         for(int i=0;*score_ptr !='\0';i++) {
             score[i]=*score_ptr;
             score_ptr++;
         }
+        score[count]='\0';
 
-        printf("Score: %s\n",score);
-        printf("Scoresize: %lu\n",sizeof(score));
+
         int length=6+ sizeof(scoretable[line].name)+1+7+sizeof(score); //Name: %s Score: %i\n\0
         char outputline[length];
         char * outputline_ptr;
         outputline_ptr = outputline;
 
+        //create outputline
         strcpy(outputline,"Name: ");
         strcat(outputline,scoretable[line].name);
         strcat(outputline," Score: ");
         strcat(outputline,score);
 
-        //strcat(outputline,"\n");
-
-        //printf("Output: %s\n",outputline);
         semaphoreUsing(UNLOCK);
+
         return outputline_ptr;
     }
 }
