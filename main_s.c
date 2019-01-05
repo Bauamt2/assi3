@@ -32,8 +32,10 @@ union semun{
     struct seminfo *__buf; //Buffer for IPC_INFO
 
 };
-int *shm;
+//int *shm;
+struct Player *shm;
 struct Player *scoretable_ptr;
+
 
 
 int erlaubteZahl(int temp,int e[]){
@@ -49,222 +51,13 @@ int erlaubteZahl(int temp,int e[]){
     return 0;
 }
 
-/**Checks if the char is a operation symbol like +,*,-,/
- * @param symbol
- * @return 1 if it is a opertion symbol
- *
- */
-int isOperationsymbol(char symbol){
-    if(symbol == '+'|| symbol == '-'||symbol=='*' || symbol=='/'){
-        return 1;
-    }
-    return 0;
-}
-
-/**Deletes all the whitespace between the numbers and the symbols
- *@param postfix a char array in postfix notation
- *@return a pointer to new char array without whitespace and each number in one index
- *
- */
-char* deleteWhitespace(char* postfix){
-    //Length of the input
-    printf("BEGINNE DELETE :%s\n",postfix);
-    int length=1;
-
-    for(int i=0;*(postfix+i) != '\0';i++) {
-
-        length++;
-    }
-    printf("%i\n",length);
-    //array for the new input without whitespace
-    char input[length];
 
 
-    //delete all whitespace
-    int count =0;
-    char* start;
-    start =postfix;
-
-    while(1){
-
-        if(*postfix == ' ' || *postfix == '\0'){
-            //create temp array which contains the character before ' '
-            int tempLength= postfix -start;
-            char temp[tempLength];
-
-            for (int i = 0; i < tempLength; i++) {
-                temp[i] = *start + i;
-            }
-
-            //is it a operationsymbol?
-            if(isOperationsymbol(temp[0])){
-                input[count]= temp[0];
-
-            }
-                //cast temp array to int
-            else {
-                int number = atoi(temp);
-                input[count] = number + '0';
-            }
-            count++;
-            if(*postfix == '\0'){
-
-                break;
-            }
-
-            //point to the new start symbol
-            start = postfix + 1;
-
-        }
-
-        postfix++;
-    }
-
-    //letztes zeichen
-
-    input[count] = '\0';
-    printf("FERTIG DELETE:%s\n",input);
-
-    char *input_ptr;
-    input_ptr=input;
-
-    return strdup(input_ptr);
-}
-
-/**Calculate the result of the given postfix notation
- * @param recvbuffer pointer to the first symbol of the postfix notation
- * @return result
- */
-int berechnePostfix(char* recvbuffer){
-    int result =0;
-    //Links,rechts,mitte
-    char *postfix;
-    char *free_ptr;
-    postfix=deleteWhitespace(recvbuffer);
-    free_ptr = postfix;
-    printf("test:%i\n",postfix[0]=='1');
 
 
-    int firstnumber=0;
-    int secondnumber=0;
-    int stack[7]={0}; //initalize all elements to zero
-
-    int top = -1;
-
-    while(*postfix!='\0'){
-        if(isOperationsymbol(*postfix)){
-            //pull n1 and n2 from the stack
-            firstnumber= stack[top--]; //pull
-            secondnumber=stack[top--];  //pull
-
-            //which operation?
-            //calculate result
-            switch(*postfix){
-                case '+':
-                    result = firstnumber+secondnumber;
-                    break;
-                case '-':
-                    result = firstnumber-secondnumber;
-                    break;
-                case '*':
-                    result = firstnumber*secondnumber;
-                    break;
-                case '/':
-                    result = firstnumber/secondnumber;
-                    break;
-                default:
-                    break;
-            }
-            stack[++top]= result; //push result on the stack
-        }
-        else{
-            stack[++top] = *postfix -'0'; //push number on the stack
-        }
 
 
-        postfix++;
-    }
-    result = stack[top];
-    free(free_ptr);
-    printf("Result: %i\n",result);
-    return result;
-}
 
-/**Calculate the score for the given input
- * @param recvbuffer the input
- * @param correctResult the correct Result
- * @return -1, if the input is syntactical wrong; or 100- |difference between the user result and the correct result|
- *
- */
-int getUsersScore(char* recvbuffer,int correctResult){
-    int result = berechnePostfix(recvbuffer);
-    int difference=correctResult-result;
-    if(difference >=0){
-        return 100-difference;
-    }
-    else
-        return 100-(difference*-1);
-}
-
-
-int kontrolliereSyntax(char* recvbuffer, int e[]){
-    //Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
-    // wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
-    // nur die 4 erlaubten Operationen +-/* verwendet wurden
-    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat ;YO, danke :D
-    //JN
-    int i = 0;
-    int korrekt= 1;
-    char temp[4];
-
-    if(recvbuffer[1] == '\0'){
-        return 0;
-    }
-    char* pruefe = deleteWhitespace(recvbuffer);
-
-printf("ich pruefe jetzt: %s\n",pruefe);
-while(1) {
-    if (isOperationsymbol(pruefe[i]) || pruefe[i] == ' ') {
-        i++;
-    } else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
-        int it = 1;
-        temp[0] = pruefe[i];
-        while (1) {
-
-            if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
-                temp[it] = pruefe[i + it];
-                it++;
-                if (it > 3) {
-                    free(pruefe);
-                    return 0;//Zahl ist >4 Stellen lang, Fehler!
-                }
-            } else {
-                temp[it] = '\0';
-                break;
-            }//ab dieser Stelle beinhaltet temp eine Benutzer Zahl
-            //prüfe ob diese Zahl genutzt werden darf mit array e[]
-
-
-        }
-        i = i + it;
-        if (!erlaubteZahl(atoi(temp), e)) {
-            free(pruefe);
-            return 0;//Unerlaubte ZAhl eingegeben
-        }
-
-    } else if (pruefe[i] == '\0') {
-        free(pruefe);
-        return 1;//EIngabe durchgearbeitet ohne Fehler
-    } else {
-        free(pruefe);
-        return 0;//unbekanntes Zeichen vorhanden
-    }
-
-}
-
-
-    return korrekt;
-}
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
  * Der Prozess pausiert also bis eine Nachricht empfangen wurde.
@@ -385,14 +178,14 @@ int create_sharedMemory(){
  */
 int attachSharedMemory(){
     printf("Attach shared memory\n");
-    shm = shmat(sharedID, NULL, 0);
+    shm = (struct Player *)shmat(sharedID, NULL, 0);
 
-    if (shm ==  (int *)-1) {
+    /*if (shm ==  (int *)-1) {
         printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
         printf("Error while attaching shared Memory.\n");
         return -1;
     }
-
+    */
 
     return 0;
 }
@@ -463,19 +256,295 @@ char* readScoreTable(){
         printf("Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
     }
 
+
+    semaphoreUsing(UNLOCK);
+
 }
+
 
 /**
  * @param points the points the player has
  * @param *name_pointer points to the first character of the playersname
  */
-void writeScoreTable(int points, char *name_pointer){
+void writeScoreTable(int points, char *name_ptr){
     //schreibe einen neuen wert in die Tabelle;falls möglich
+    printf("Write Scoretable\n");
     semaphoreUsing(LOCK);
-    scoretable_ptr = (struct Player*)shm;
-    //for(int i=0;) TODO: Ausgeklammert wegen Syntaxfehler
+    struct Player scoretable[10];
+    memcpy(scoretable,shm,sizeof(shm));
+
+
+    for(int i=0;i<10;i++){
+        printf("Nach Copy: Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
+    }
+
+    //create new Player
+    struct Player newPlayer;
+    newPlayer.score=points;
+    int count=0;
+    while(1) {
+        if(*name_ptr == '\0'){
+            newPlayer.name[count]='\0';
+            break;
+        }
+        newPlayer.name[count] = *name_ptr;
+        name_ptr++;
+        count++;
+    }
+    printf("Player %s Score %i\n",newPlayer.name,newPlayer.score);
+
+    struct Player tempPlayer;
+
+   // struct Player tempScoretable[10];
+   // memcpy(tempScoretable,scoretable,sizeof(scoretable));
+    //prüfe ob der player in die scoretable kommt
+    for(int i=0;i<10;i++){
+        if(scoretable[i].score < newPlayer.score){
+            printf("Player found at position: %i\n",i);
+
+
+            for(int j=9;j>i;j--){
+                scoretable[j]=scoretable[j-1];
+                printf("J: %i \n",j);
+            }
+
+
+            scoretable[i]=newPlayer;
+            //TODO
+            for(int i=0;i<10;i++){
+                printf("Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
+            }
+            break;
+        }
+    }
+    //for(int i=0;) TODO: Ausgeklammert wegen Syntxfehler
+    memcpy(shm,scoretable,sizeof(shm));
     semaphoreUsing(UNLOCK);
 }
+/**Checks if the char is a operation symbol like +,*,-,/
+ * @param symbol
+ * @return 1 if it is a opertion symbol
+ *
+ */
+int isOperationsymbol(char symbol){
+    if(symbol == '+'|| symbol == '-'||symbol=='*' || symbol=='/'){
+        return 1;
+    }
+    return 0;
+}
+
+/**Deletes all the whitespace between the numbers and the symbols
+ *@param postfix a char array in postfix notation
+ *@return a pointer to new char array without whitespace and each number in one index
+ *
+ */
+char* deleteWhitespace(char* postfix){
+    //Length of the input
+    //printf("BEGINNE DELETE :%s\n",postfix);
+    int length=1;
+
+    for(int i=0;*(postfix+i) != '\0';i++) {
+
+        length++;
+    }
+    //printf("%i\n",length);
+    //array for the new input without whitespace
+    char input[length];
+
+
+    //delete all whitespace
+    int count =0;
+    char* start;
+    start =postfix;
+
+    while(1){
+
+        if(*postfix == ' ' || *postfix == '\0'){
+            //create temp array which contains the character before ' '
+            int tempLength= postfix -start;
+            char temp[tempLength];
+
+            for (int i = 0; i < tempLength; i++) {
+                temp[i] = *start + i;
+            }
+
+            //is it a operationsymbol?
+            if(isOperationsymbol(temp[0])){
+                input[count]= temp[0];
+
+            }
+                //cast temp array to int
+            else {
+                int number = atoi(temp);
+                //printf("Number : %i",number);
+                input[count] = number + '0';
+            }
+            count++;
+            if(*postfix == '\0'){
+
+                break;
+            }
+
+            //point to the new start symbol
+            start = postfix + 1;
+
+        }
+
+        postfix++;
+    }
+
+    //letztes zeichen
+
+    input[count] = '\0';
+    // printf("FERTIG DELETE:%s\n",input);
+
+    char *input_ptr;
+    input_ptr=input;
+
+    return strdup(input_ptr);
+
+}
+
+/**Calculate the result of the given postfix notation
+ * @param recvbuffer pointer to the first symbol of the postfix notation
+ * @return result
+ */
+int berechnePostfix(char* recvbuffer){
+
+    int result =0;
+    //Links,rechts,mitte
+    char *postfix;
+    char *free_ptr;
+
+    postfix=deleteWhitespace(recvbuffer);
+    free_ptr = postfix;
+    printf("test:%i\n",postfix[0]=='1');
+
+
+    int firstnumber=0;
+    int secondnumber=0;
+    int stack[7]={0}; //initalize all elements to zero
+
+    int top = -1;
+
+    while(*postfix!='\0'){
+        if(isOperationsymbol(*postfix)){
+            //pull n1 and n2 from the stack
+            firstnumber= stack[top--]; //pull
+            secondnumber=stack[top--];  //pull
+
+            //which operation?
+            //calculate result
+            switch(*postfix){
+                case '+':
+                    result = firstnumber+secondnumber;
+                    break;
+                case '-':
+                    result = firstnumber-secondnumber;
+                    break;
+                case '*':
+                    result = firstnumber*secondnumber;
+                    break;
+                case '/':
+                    result = firstnumber/secondnumber;
+                    break;
+                default:
+                    break;
+            }
+            stack[++top]= result; //push result on the stack
+        }
+        else{
+            stack[++top] = *postfix -'0'; //push number on the stack
+        }
+
+        postfix++;
+    }
+    result = stack[top];
+    free(free_ptr);
+     printf("Result: %i\n",result);
+    return result;
+
+}
+int kontrolliereSyntax(char* recvbuffer, int e[]){
+    //Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
+    // wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
+    // nur die 4 erlaubten Operationen +-/* verwendet wurden
+    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat ;YO, danke :D
+    //JN
+    int i = 0;
+    int korrekt= 1;
+    char temp[4];
+
+    if(recvbuffer[1] == '\0'){
+        return 0;
+    }
+    char* pruefe = deleteWhitespace(recvbuffer);
+
+    printf("ich pruefe jetzt: %s\n",pruefe);
+    while(1) {
+        if (isOperationsymbol(pruefe[i]) || pruefe[i] == ' ') {
+            i++;
+        } else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
+            int it = 1;
+            temp[0] = pruefe[i];
+            while (1) {
+
+                if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
+                    temp[it] = pruefe[i + it];
+                    it++;
+                    if (it > 3) {
+                        free(pruefe);
+                        return 0;//Zahl ist >4 Stellen lang, Fehler!
+                    }
+                } else {
+                    temp[it] = '\0';
+                    break;
+                }//ab dieser Stelle beinhaltet temp eine Benutzer Zahl
+                //prüfe ob diese Zahl genutzt werden darf mit array e[]
+
+
+            }
+            i = i + it;
+            if (!erlaubteZahl(atoi(temp), e)) {
+                free(pruefe);
+                return 0;//Unerlaubte ZAhl eingegeben
+            }
+
+        } else if (pruefe[i] == '\0') {
+            free(pruefe);
+            return 1;//EIngabe durchgearbeitet ohne Fehler
+        } else {
+            free(pruefe);
+            return 0;//unbekanntes Zeichen vorhanden
+        }
+
+    }
+
+
+    return korrekt;
+}
+/**Calculate the score for the given input
+ * @param recvbuffer the input
+ * @param correctResult the correct Result
+ * @return -1, if the input is syntactical wrong; or 100- |difference between the user result and the correct result|
+ *
+ */
+int getUsersScore(char* recvbuffer,int correctResult){
+    printf("gET uSER sCORE\n");
+    int result = berechnePostfix(recvbuffer);
+    int difference=correctResult-result;
+    printf("Differenz: %i",difference);
+    if(difference >=0){
+        printf("Result:%i Differenz:%i\n",100-difference,difference);
+        return 100-difference;
+    }
+    else {
+        printf("Result:%i Differenz:%i\n", 100 - difference, difference);
+        return 100 + difference ;
+    }
+}
+
+
 
 int main(int argc, char **argv) {// -e 1 2 3 4 5 6 7 -n 199(ergebnis) -t 23000 (port)
     int e[7];
@@ -532,14 +601,35 @@ for(int i=0;i<7;i++){
         exit(1);
     }
 
+
+
     //create the scoretable
     create_ScoreTable();
     readScoreTable();
 
-    char temp[6]={'1',' ','2',' ','+','\0'};
-    char * test;
-    test=temp;
+    char temp[3];
+    char *test= malloc(sizeof(temp));
+
+
+    //berechnePostfix(test);
+
+    //getUsersScore(test,10);
+    char name[2]={'t','\0'};
+    char *name_ptr=name;
+
+    //writeScoreTable(100,name);
+    //readScoreTable();
+    temp[0]='1';
+    temp[1]='2';
+    temp[2]='\0';
+
+    writeScoreTable(10,name);
+    readScoreTable();
+    writeScoreTable(5,name);
+    //readScoreTable();
     berechnePostfix(test);
+    writeScoreTable(8,name);
+    readScoreTable();
 
 char *nachricht = "Willkommen client!";
 
@@ -618,7 +708,7 @@ if(parent == 1){
         }else if(kontrolliereSyntax(recvbuffer,e)){
             printf("syntax gültig\n");
             int spielererg = getUsersScore(recvbuffer,erg);
-            printf("erg: %n\n",spielererg);
+            //printf("erg: %n\n",spielererg);
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
             //antworte ob er dmait in die top10 gekommen ist oder nicht
             sprintf(sendbuffer,"Gültige Postfix erkannt: %i Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
