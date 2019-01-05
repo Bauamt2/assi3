@@ -309,7 +309,7 @@ char * readScoreTableLine(int line){
         strcat(outputline,score);
 
         semaphoreUsing(UNLOCK);
-
+        printf("%s\n",outputline_ptr);
         return outputline_ptr;
     }
 }
@@ -740,9 +740,10 @@ if(parent == 1){
             printf("SPIELER VERLANGT TOP 10\n");
 
            for(int i=0;i<10;i++){
-               char *scoreline= readScoreTableLine(i);
-               send(consocket,scoreline,sizeof(*scoreline),0); //send the line to the client
-               usleep(1000);
+
+               send(consocket,readScoreTableLine(i),sizeof(readScoreTableLine(i)),0); //send the line to the client
+               printf("size: %s\n",sizeof(readScoreTableLine(i)));
+               usleep(5000);
            }
             //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 

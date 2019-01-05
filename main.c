@@ -259,8 +259,11 @@ while(1==1 && abbruch == 0){//user eingabeschleife
         //TODO: EMPFANGE TOP 10
         //ZEIGE TOP 10 AN
         //GEHE AUF BEFHEL ZURÜCK ZUM NORMALEN SCREEN
-
-
+        for(int i=0;i<10;i++){
+            waitRecv(mysocket,recvbuffer);
+            printf("%s\n",recvbuffer);
+        }
+        fgets(&input,40,stdin);
     }else{
         strcpy(lastcmd,input);
         send(mysocket,input,strlen(input),0);//Sende befehl an server
