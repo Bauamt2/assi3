@@ -198,11 +198,11 @@ void create_ScoreTable(){
 
     semaphoreUsing(LOCK);
     struct Player scoretable [10];
-    memcpy(scoretable,shm,sizeof(shm));
+    memcpy(scoretable,shm,sizeof(scoretable));
 
     for(int i=0; i < 10;i++){
 
-        //struct Player tempPlayer{0," "};
+
         scoretable[i].score = 0;
         char *name_ptr=scoretable[i].name;
         memset(name_ptr,' ',9);
@@ -222,38 +222,13 @@ void create_ScoreTable(){
  * @return pointer to the output for the user
  *
  */
-char* readScoreTable(){
+void readScoreTable(){
     semaphoreUsing(LOCK);
     printf("Read Score table\n");
-    /*struct Player scoretable[10];
-    memcpy(scoretable,shm,sizeof(shm));
-    printf("Copy success\n");
-    char output[1024];
-
-    //Title
-    strcat(output,"Name\tScore\n");
-    printf("Name\tScore\n");
-    //one row in the table
-    for(int i=0;i<10;i++){
-
-        printf("Name : %s; Score %i\n",scoretable[i].name,scoretable[i].score);
-        strcat(output,scoretable[i].name);
-        printf("Your string: %s\n",output);
-        strcat(output,"\t");
-        char  charscore = scoretable[i].score+'0';
-        strcat(output,charscore);
-        strcat(output,"\n");
-    }
-    char * output_ptr;
-    output_ptr = output;
-    semaphoreUsing(UNLOCK);
-    //printf("Your string: %s\n",output_ptr);
-    return output_ptr;
-     */
     struct Player scoretable[10];
-    memcpy(scoretable,shm,sizeof(shm));
+    memcpy(scoretable,shm,sizeof(scoretable));
     for(int i=0;i<10;i++){
-        printf("Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
+        printf("Name: %s Score:%i\n",scoretable[i].name,scoretable[i].score);
     }
 
 
@@ -261,8 +236,70 @@ char* readScoreTable(){
 
 }
 
+/**Converts the given integer to the corresponding char array
+ * @param number the int number
+ * *@return array_ptr a pointer to the char array
+ */
+char * convertIntToChar(int number){
+    char * array_ptr;
+    if(number <10){
+        char charArray[2]={number+'0','\0'};
+        array_ptr= charArray;
+    }
+    else if(number< 100){
+        char charArray[3];
+        charArray[0]=(number/10)+'0';
+        charArray[1]=(number%10)+'0';
+        charArray[2]='\0';
+        array_ptr= charArray;
+    }
+    else{
+        char charArray[4]={'1','0','0','\0'};
+        array_ptr= charArray;
+    }
+    return array_ptr;
+}
 
-/**
+/**Returns the line of the scoretable; including next line (\n)
+ *
+ * @param line line of the scoretable
+ * @return outputline_ptr a pointer to an char array which contains the whole line
+ */
+char * readScoreTableLine(int line){
+    if(line<10 && line>=0){
+        semaphoreUsing(LOCK);
+
+        struct Player scoretable[10];
+        memcpy(scoretable,shm,sizeof(scoretable));
+
+        char *score_ptr = convertIntToChar(scoretable[line].score);
+        char score[4];
+        for(int i=0;*score_ptr !='\0';i++) {
+            score[i]=*score_ptr;
+            score_ptr++;
+        }
+
+        printf("Score: %s\n",score);
+        printf("Scoresize: %lu\n",sizeof(score));
+        int length=6+ sizeof(scoretable[line].name)+1+7+sizeof(score); //Name: %s Score: %i\n\0
+        char outputline[length];
+        char * outputline_ptr;
+        outputline_ptr = outputline;
+
+        strcpy(outputline,"Name: ");
+        strcat(outputline,scoretable[line].name);
+        strcat(outputline," Score: ");
+        strcat(outputline,score);
+
+        //strcat(outputline,"\n");
+
+        //printf("Output: %s\n",outputline);
+        semaphoreUsing(UNLOCK);
+        return outputline_ptr;
+    }
+}
+
+/**Insert the player to the scoretable if the score is greater than one entry in the scoretable
  * @param points the points the player has
  * @param *name_pointer points to the first character of the playersname
  */
@@ -271,17 +308,14 @@ void writeScoreTable(int points, char *name_ptr){
     printf("Write Scoretable\n");
     semaphoreUsing(LOCK);
     struct Player scoretable[10];
-    memcpy(scoretable,shm,sizeof(shm));
+    memcpy(scoretable,shm,sizeof(scoretable));
 
-
-    for(int i=0;i<10;i++){
-        printf("Nach Copy: Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
-    }
 
     //create new Player
     struct Player newPlayer;
     newPlayer.score=points;
     int count=0;
+    //save name
     while(1) {
         if(*name_ptr == '\0'){
             newPlayer.name[count]='\0';
@@ -291,34 +325,21 @@ void writeScoreTable(int points, char *name_ptr){
         name_ptr++;
         count++;
     }
-    printf("Player %s Score %i\n",newPlayer.name,newPlayer.score);
 
-    struct Player tempPlayer;
 
-   // struct Player tempScoretable[10];
-   // memcpy(tempScoretable,scoretable,sizeof(scoretable));
     //prüfe ob der player in die scoretable kommt
     for(int i=0;i<10;i++){
-        if(scoretable[i].score < newPlayer.score){
-            printf("Player found at position: %i\n",i);
-
+        if(scoretable[i].score <= newPlayer.score){
 
             for(int j=9;j>i;j--){
                 scoretable[j]=scoretable[j-1];
-                printf("J: %i \n",j);
             }
-
-
             scoretable[i]=newPlayer;
-            //TODO
-            for(int i=0;i<10;i++){
-                printf("Name: %s \t Score:%i\n",scoretable[i].name,scoretable[i].score);
-            }
             break;
         }
     }
-    //for(int i=0;) TODO: Ausgeklammert wegen Syntxfehler
-    memcpy(shm,scoretable,sizeof(shm));
+
+    memcpy(shm,scoretable,sizeof(scoretable));
     semaphoreUsing(UNLOCK);
 }
 /**Checks if the char is a operation symbol like +,*,-,/
@@ -347,7 +368,7 @@ char* deleteWhitespace(char* postfix){
 
         length++;
     }
-    //printf("%i\n",length);
+
     //array for the new input without whitespace
     char input[length];
 
@@ -376,7 +397,7 @@ char* deleteWhitespace(char* postfix){
                 //cast temp array to int
             else {
                 int number = atoi(temp);
-                //printf("Number : %i",number);
+
                 input[count] = number + '0';
             }
             count++;
@@ -396,7 +417,7 @@ char* deleteWhitespace(char* postfix){
     //letztes zeichen
 
     input[count] = '\0';
-    // printf("FERTIG DELETE:%s\n",input);
+
 
     char *input_ptr;
     input_ptr=input;
@@ -607,29 +628,29 @@ for(int i=0;i<7;i++){
     create_ScoreTable();
     readScoreTable();
 
-    char temp[3];
-    char *test= malloc(sizeof(temp));
-
-
     //berechnePostfix(test);
 
     //getUsersScore(test,10);
     char name[2]={'t','\0'};
     char *name_ptr=name;
 
-    //writeScoreTable(100,name);
-    //readScoreTable();
-    temp[0]='1';
-    temp[1]='2';
-    temp[2]='\0';
+
 
     writeScoreTable(10,name);
-    readScoreTable();
     writeScoreTable(5,name);
-    //readScoreTable();
-    berechnePostfix(test);
     writeScoreTable(8,name);
+    writeScoreTable(88,name);
+    writeScoreTable(100,name);
+    writeScoreTable(76,name);
+    writeScoreTable(46,name);
+    writeScoreTable(0,name);
+    writeScoreTable(37,name);
+   // writeScoreTable(76,name);
     readScoreTable();
+    for(int i=0;i<10;i++){
+        printf("%s\n",readScoreTableLine(i));
+    }
+    printf(" Line 9:%s\n",readScoreTableLine(9));
 
 char *nachricht = "Willkommen client!";
 
@@ -700,7 +721,10 @@ if(parent == 1){
             // 1. NAME             PUNKTZAHL
             printf("SPIELER VERLANGT TOP 10\n");
 
-            char *scoreTable = readScoreTable(); //get ScoreTable as correct output; saved in *scoreTable
+           for(int i=0;i<10;i++){
+               char *scoreline= readScoreTableLine(i);
+               send(consocket,scoreline,sizeof(*scoreline),0); //send the line to the client
+           }
             //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 
 
