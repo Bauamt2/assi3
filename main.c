@@ -10,6 +10,15 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <errno.h>
+#include <signal.h>
+
+int abbruch = 0;
+
+void intHandler(int nix) {
+    abbruch = 1;
+    printf("Alles klar! Mit Enter können sie das Spiel nun beenden!\n");
+}
+
 /*int sharedID;
 //for each player
 struct Player{
@@ -101,7 +110,14 @@ void waitRecv(int socket, char* recvbuffer){
     printf("warte auf paket\n");
 
     while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
-        usleep(1000);
+        if(abbruch == 0) {
+            usleep(1000);
+        }else{
+            send(socket,"QUIT",4,0);
+            printf("Client wird beendet...\n");
+           exit(2);
+           return;
+        }
     }
     recvbuffer[size] = '\0';
     printf("!!wr paket Size: %d\n",size);
@@ -131,6 +147,7 @@ int hostnameToIp(char hostname[],char ip[]){
     return 0;
 }
 int main(int argc, char **argv) {// -h hostname -p port
+    signal(SIGINT, intHandler);
     printf("HALLO ICH BIN DER CLIENT\n");
 int opt;
 char  hostname[30] = "";
@@ -227,7 +244,7 @@ zeigeAufgaben(erg,e,pname,"","");
     char * lastcmd[100];
     char * lastanswer[100];
 
-while(1==1){//user eingabeschleife
+while(1==1 && abbruch == 0){//user eingabeschleife
 
     fgets(&input,100,stdin);
 
@@ -256,7 +273,10 @@ while(1==1){//user eingabeschleife
 }
 
 
-printf("ich disconnecte\n");
+    send(mysocket,"QUIT",4,0);
+    close(mysocket);//schließe Verbindung
+    printf("Client wird beendet...\n");
+   return 2;
 
 
 
@@ -266,8 +286,6 @@ printf("ich disconnecte\n");
 
 
 
-
-close(mysocket);//schließe Verbindung
 
 //ENDE VERBINDUNG
 

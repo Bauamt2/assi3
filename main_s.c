@@ -12,6 +12,7 @@
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <errno.h>
+#include <signal.h>
 
 #define NACHRICHTENLAENGE 100
 #define KEY 123458L
@@ -20,6 +21,12 @@
 static struct sembuf semaphore;
 static int semid;
 int sharedID;
+int abbruch = 0;
+
+void intHandler(int nix) {
+    abbruch = 1;
+    printf("Ok, Server wird bald beendet!\n");
+}
 //for each player
 struct Player{
     int score;
@@ -597,6 +604,7 @@ while((opt = getopt(argc,argv, "e:n:p:")) != -1){
             break;
     }
 }
+    signal(SIGINT, intHandler);
 
 printf("Port: %d\n",port);
 printf("Ergebnis: %d\n",erg);
@@ -678,7 +686,7 @@ bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
 
 int parent =1;
 int ende = 0;
-while(parent == 1 && ende == 0) {
+while(parent == 1 && abbruch == 0) {
     listen(mysocket, 10);
     usleep(10000);
    // printf("JUMP!");
@@ -691,6 +699,8 @@ while(parent == 1 && ende == 0) {
 
 if(parent == 1){
     printf("Server wird beendet!\n");
+    close(mysocket);//schließe verbindung
+
     return 0;
 }
 
@@ -732,6 +742,7 @@ if(parent == 1){
            for(int i=0;i<10;i++){
                char *scoreline= readScoreTableLine(i);
                send(consocket,scoreline,sizeof(*scoreline),0); //send the line to the client
+               usleep(1000);
            }
             //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 
