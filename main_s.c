@@ -59,6 +59,12 @@ void waitRecv(int socket, char* recvbuffer){
 
     return;
 }
+
+/*
+ * Diese Funktion befüllt das Array e, welches die Zahlen,die benutzt werden dürfen enthällt.
+ * e: ist die ausgabe
+ * estring: ist der text, der alle zahlen, getrennt durch ein leerzeichen enthält
+ */
 int efuellen(int e[],char estring[]){
     char* temp[7];
     int warn =0;
