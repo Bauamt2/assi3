@@ -496,10 +496,10 @@ int berechnePostfix(char* recvbuffer){
  *
  * @param recvbuffer the input that has to be checked
  * @param e a array which contains all numbers the user can use
- * @return error_ptr  a pointer to the erroroMessage; the message is "Success" if everthing is correct
+ * @return  one if a error is located
  */
-char* kontrolliereSyntax(char *recvbuffer,int e[]){
-
+int kontrolliereSyntax(char *recvbuffer,int e[]){
+    printf("Check syntax\n");
     char errormessage[100];
     char *error_ptr;
     error_ptr=errormessage;
@@ -507,6 +507,8 @@ char* kontrolliereSyntax(char *recvbuffer,int e[]){
     start=recvbuffer;
     int whitespaceCount =0;
     int endLoop=0;
+
+
 
     while(1){
         if(*recvbuffer==' ' || *recvbuffer == '\0'){
@@ -530,28 +532,33 @@ char* kontrolliereSyntax(char *recvbuffer,int e[]){
             for(int i=0;i<tempLength;i++){
                 //too much whitespace
                 if(isOperationsymbol(temp[i]) && i==0){
-                    if(tempLength >1){
+                   /* if(tempLength >1){
                         sprintf(errormessage,"Use withespace between operationsymbol and next symbol.");
                         return error_ptr;
                     }
+                    */
                     foundOperation =1;
                 }
+
                 if(temp[i]==' '){
 
                     sprintf(errormessage,"Too much whitespace is used.");
-                    return error_ptr;
+                    //return error_ptr;
+                    return 1;
                 }
                 //operationsymbol at the wrong position
                 else if(i!=0 && isOperationsymbol(temp[i])){
 
                     sprintf(errormessage,"Operationsymbol is at a wrong position. Insert whitespace around it. Symbol is: %c",temp[i]);
-                    return error_ptr;
+                    //return error_ptr;
+                    return 1;
                 }
                 //wrong symbol
                 else if(atoi(&temp[i])==0 && isOperationsymbol(temp[i])==0){
 
                     sprintf(errormessage,"You use a wrong symbol. Symbol is: %c",temp[i]);
-                    return error_ptr;
+                    //return error_ptr;
+                    return 1;
                 }
 
             }
@@ -573,7 +580,8 @@ char* kontrolliereSyntax(char *recvbuffer,int e[]){
                 }
                 if(found ==0){
                     sprintf(errormessage,"You used a wrong number. Number is: %i",number);
-                    return error_ptr;
+                    //return error_ptr;
+                    return 1;
                 }
             }
 
@@ -589,11 +597,13 @@ char* kontrolliereSyntax(char *recvbuffer,int e[]){
     }
     if(whitespaceCount ==0){
         sprintf(errormessage,"You used no whitespace.");
+        return 1;
     }
     else{
         sprintf(errormessage,"Success");
     }
-    return error_ptr;
+    //return error_ptr;
+    return 0;
 }
 
 /**Calculate the score for the given input
@@ -606,7 +616,11 @@ int getUsersScore(char* recvbuffer,int correctResult){
 
     int result = berechnePostfix(recvbuffer);
     int difference=correctResult-result;
-
+    printf("Differnece: %i",difference);
+    if(difference >100){
+        int newDifference=difference%100;
+        return 100-newDifference;
+    }
     if(difference >=0){
         return 100-difference;
     }
@@ -675,6 +689,8 @@ for(int i=0;i<7;i++){
 
     //create the scoretable
     create_ScoreTable();
+
+
 
 
 char *nachricht = "Willkommen client!";
@@ -756,9 +772,11 @@ if(parent == 1){
 
 
         } else {
-            char *syntaxError;
-            syntaxError = kontrolliereSyntax(recvbuffer, e);
-            if (syntaxError == "Success") {
+
+            int syntaxError = kontrolliereSyntax(recvbuffer, e);
+
+
+            if (syntaxError == 0) {
                 printf("syntax gültig\n");
                 int spielererg = getUsersScore(recvbuffer, erg);
 
@@ -780,8 +798,8 @@ if(parent == 1){
             else{
 
                 printf("syntax ungültig\n");
-                sprintf(sendbuffer, "Keine gültige Nachricht: %s: %s; %s\n", spielername,
-                    recvbuffer,syntaxError);//bereitet den Echo Antworttext vor
+                sprintf(sendbuffer,"Ungueltiger Syntax: %s %s",spielername,recvbuffer);
+                //sprintf(sendbuffer, "%s\n",syntaxError);//bereitet den Echo Antworttext vor
                 send(consocket, sendbuffer, strlen(sendbuffer), 0);//sendet diesen
         }
     }
