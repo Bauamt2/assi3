@@ -509,7 +509,6 @@ int kontrolliereSyntax(char *recvbuffer,int e[]){
     int endLoop=0;
 
 
-
     while(1){
         if(*recvbuffer==' ' || *recvbuffer == '\0'){
             if(*recvbuffer == '\0'){
