@@ -14,7 +14,7 @@
 #include <errno.h>
 #include <signal.h>
 
-#define NACHRICHTENLAENGE 100
+
 #define KEY 123458L
 #define LOCK -1
 #define UNLOCK 1
@@ -39,31 +39,8 @@ union semun{
     struct seminfo *__buf; //Buffer for IPC_INFO
 
 };
-//int *shm;
+
 struct Player *shm;
-struct Player *scoretable_ptr;
-
-
-
-int erlaubteZahl(int temp,int e[]){
-
-    for(int i=0;i<7;i++){
-
-        if(temp == e[i]){
-            return 1;
-        }
-
-    }
-
-    return 0;
-}
-
-
-
-
-
-
-
 
 /*
  * Diese Funktion funktioneirt genauso wie recv(), jedoch wird hier auf eine Nachricht zwingend gewartet
@@ -109,7 +86,7 @@ return 1;
 }
 
 /**Tries to get the semaphore with the KEY;
- * if the semaphore doesnt exists, a new one is created;
+ * if the semaphore doesnt exists, a new one is created and the semaphore value is set to one
  * The semaphoreid is saved in semid.
  *
  * @return -1, when there are errors while creating the semaphore
@@ -134,7 +111,8 @@ int create_semaphore(){
 
         union semun arg;
         arg.val = 1;
-        if(semctl(semid,0,SETVAL,arg)==-1){             //erster semaphore wird mit 1 initalisiert
+        //initialize first semaphore with one
+        if(semctl(semid,0,SETVAL,arg)==-1){
             printf("Oh dear, something went wrong with errno: %d! %s\n", errno, strerror(errno));
             printf("Cannot initialize semaphore with one.\n");
             return -1;
@@ -143,6 +121,7 @@ int create_semaphore(){
 
     return 0;
 }
+
 /**Try to change the value of the semaphore variable;
  * if there is an error, it would be print out and exit with 1
  * @param operation; 1 for locking the critical section
@@ -154,7 +133,6 @@ int semaphoreUsing(int operation){
     semaphore.sem_op = operation;
     semaphore.sem_flg = SEM_UNDO;
     if(semop(semid, &semaphore, 1)== -1){
-        //Fehler abfangen?
         perror("semop");
         exit(1);
     }
@@ -168,7 +146,6 @@ int semaphoreUsing(int operation){
  */
 int create_sharedMemory(){
     printf("Create shared memory\n");
-    //key_t sharedMKey = 42;
     key_t sharedMKey = ftok("main_s.c",'1');
     sharedID = shmget(sharedMKey,10* sizeof(struct Player),IPC_CREAT|0666);
     if(sharedID <0){
@@ -180,7 +157,6 @@ int create_sharedMemory(){
 }
 
 /**Attaches the shared Memory to our data space;
- * prints an error message, when it occurs an error
  *@return 0 if the attaching was successful
  */
 int attachSharedMemory(){
@@ -214,10 +190,7 @@ void create_ScoreTable(){
         char *name_ptr=scoretable[i].name;
         memset(name_ptr,' ',9);
         scoretable[i].name[9] = '\0';
-        printf("Name : %s; Score %i\n",scoretable[i].name,scoretable[i].score);
     }
-
-
 
     memcpy(shm,scoretable,sizeof(scoretable));
 
@@ -225,9 +198,7 @@ void create_ScoreTable(){
 
 }
 
-/**Locks the critical section and gets the score table;after that unlocks the critical section
- * @return pointer to the output for the user
- *
+/**Prints out the whole scoretable
  */
 void readScoreTable(){
     semaphoreUsing(LOCK);
@@ -267,7 +238,7 @@ char * convertIntToChar(int number){
     return array_ptr;
 }
 
-/**Returns the line of the scoretable; including next line (\n)
+/**Returns the line of the scoretable;
  *
  * @param line line of the scoretable
  * @return outputline_ptr a pointer to an char array which contains the whole line
@@ -297,32 +268,26 @@ char * readScoreTableLine(int line){
         score[count]='\0';
 
 
-        int length=6+ sizeof(scoretable[line].name)+1+7+sizeof(score); //Name: %s Score: %i\n\0
+        int length=6+ sizeof(scoretable[line].name)+1+7+sizeof(score); //Name: %s Score: %s
         char outputline[length];
-        printf("recaodres length: %d\n",length);
+        //printf("recaodres length: %d\n",length);
         char * outputline_ptr;
 
-
-        //create outputline
-       // strcpy(outputline,"Name: ");
-        //strcat(outputline,scoretable[line].name);
-        //strcat(outputline," Score: ");
-        //strcat(outputline,score);
         sprintf(outputline,"Name: %s Score: %s",scoretable[line].name,score);
         outputline_ptr = outputline;
         semaphoreUsing(UNLOCK);
-        printf("%s\n",outputline_ptr);
-        printf("size pointer:%u\n",strlen(outputline_ptr));
+        //printf("%s\n",outputline_ptr);
+        //printf("size pointer:%u\n",strlen(outputline_ptr));
         return outputline_ptr;
     }
 }
 
-/**Insert the player to the scoretable if the score is greater than one entry in the scoretable
+/**Insert the player to the scoretable if the score is greater or equal one entry in the scoretable
  * @param points the points the player has
  * @param *name_pointer points to the first character of the playersname
  */
 void writeScoreTable(int points, char *name_ptr){
-    //schreibe einen neuen wert in die Tabelle;falls möglich
+
     printf("Write Scoretable\n");
     semaphoreUsing(LOCK);
     struct Player scoretable[10];
@@ -345,7 +310,7 @@ void writeScoreTable(int points, char *name_ptr){
     }
 
 
-    //prüfe ob der player in die scoretable kommt
+    //check if player gets in the scoretable and insert
     for(int i=0;i<10;i++){
         if(scoretable[i].score <= newPlayer.score){
 
@@ -361,7 +326,7 @@ void writeScoreTable(int points, char *name_ptr){
     semaphoreUsing(UNLOCK);
 }
 
-/**Checks if the client with the given name is in the scoretable
+/**Checks if the client with the given name and score is in the scoretable
  *
  * @param name of the client
  * @return 1 if the client is in the scoretable; else 0
@@ -382,6 +347,7 @@ int isInScoreTable(char *name,int score){
     semaphoreUsing(UNLOCK);
     return 0;
 }
+
 /**Checks if the char is a operation symbol like +,*,-,/
  * @param symbol
  * @return 1 if it is a opertion symbol
@@ -401,7 +367,6 @@ int isOperationsymbol(char symbol){
  */
 char* deleteWhitespace(char* postfix){
     //Length of the input
-    //printf("BEGINNE DELETE :%s\n",postfix);
     int length=1;
 
     for(int i=0;*(postfix+i) != '\0';i++) {
@@ -434,15 +399,16 @@ char* deleteWhitespace(char* postfix){
                 input[count]= temp[0];
 
             }
-                //cast temp array to int
+            //cast temp array to int
             else {
                 int number = atoi(temp);
 
                 input[count] = number + '0';
             }
-            count++;
-            if(*postfix == '\0'){
 
+            count++;
+
+            if(*postfix == '\0'){
                 break;
             }
 
@@ -454,7 +420,7 @@ char* deleteWhitespace(char* postfix){
         postfix++;
     }
 
-    //letztes zeichen
+    //last symbol
 
     input[count] = '\0';
 
@@ -468,12 +434,11 @@ char* deleteWhitespace(char* postfix){
 
 /**Calculate the result of the given postfix notation
  * @param recvbuffer pointer to the first symbol of the postfix notation
- * @return result
+ * @return result the result of the postfix notation
  */
 int berechnePostfix(char* recvbuffer){
 
     int result =0;
-    //Links,rechts,mitte
     char *postfix;
     char *free_ptr;
 
@@ -526,69 +491,15 @@ int berechnePostfix(char* recvbuffer){
     return result;
 
 }
-int kontrolliereSyntax(char* recvbuffer, int e[]){
-    //Returne 1, wenn recvbuffer eine korrekte Postfix notation ist UND
-    // wenn jede der nummern nur maximal einmal oder garnicht verwendet wurden UND
-    // nur die 4 erlaubten Operationen +-/* verwendet wurden
-    //Vielleicht helfen dir meine Methoden deleteWhitespace() und isOperationsymbol() :) Pat ;YO, danke :D
-    //JN
-    int i = 0;
-    int korrekt= 1;
-    char temp[4];
 
-    if(recvbuffer[1] == '\0'){
-        return 0;
-    }
-    char* pruefe = deleteWhitespace(recvbuffer);
+/**Checks if the given input has the correct syntax
+ *
+ * @param recvbuffer the input that has to be checked
+ * @param e a array which contains all numbers the user can use
+ * @return error_ptr  a pointer to the erroroMessage; the message is "Success" if everthing is correct
+ */
+char* kontrolliereSyntax(char *recvbuffer,int e[]){
 
-    printf("ich pruefe jetzt: %s\n",pruefe);
-    while(1) {
-        if (isOperationsymbol(pruefe[i])) {
-            i++;
-        }
-        else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 100) {//prüft ob an der Stelle eine Zahl ist 1-100
-            int it = 1;
-            temp[0] = pruefe[i];
-            while (1) {
-
-              if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
-                    temp[it] = pruefe[i + it];
-                    it++;
-                    if (it > 3) {
-                        free(pruefe);
-                        return 0;//Zahl ist >4 Stellen lang, Fehler!
-                    }
-
-                } else {
-                    temp[it] = '\0';
-                    break;
-                }//ab dieser Stelle beinhaltet temp eine Benutzer Zahl
-                //prüfe ob diese Zahl genutzt werden darf mit array e[]
-
-
-            }
-            i = i + it;
-            if (!erlaubteZahl(atoi(temp), e)) {
-                free(pruefe);
-                return 0;//Unerlaubte ZAhl eingegeben
-            }
-
-        } else if (pruefe[i] == '\0') {
-            free(pruefe);
-            return 1;//EIngabe durchgearbeitet ohne Fehler
-        } else {
-            free(pruefe);
-            return 0;//unbekanntes Zeichen vorhanden
-        }
-
-    }
-
-
-    return korrekt;
-}
-
-char* checkInput(char *recvbuffer,int e[]){
-    printf("Check input\n");
     char errormessage[100];
     char *error_ptr;
     error_ptr=errormessage;
@@ -618,9 +529,9 @@ char* checkInput(char *recvbuffer,int e[]){
             //check the syntax
             for(int i=0;i<tempLength;i++){
                 //too much whitespace
-                if(isOperationsymbol(temp[i]) && i=0){
+                if(isOperationsymbol(temp[i]) && i==0){
                     if(tempLength >1){
-                        sprintf(errormessage,"Use withespace between operationsymbol and next symbol. Symbol is after: %c",temp[i]);
+                        sprintf(errormessage,"Use withespace between operationsymbol and next symbol.");
                         return error_ptr;
                     }
                     foundOperation =1;
@@ -688,7 +599,7 @@ char* checkInput(char *recvbuffer,int e[]){
 /**Calculate the score for the given input
  * @param recvbuffer the input
  * @param correctResult the correct Result
- * @return -1, if the input is syntactical wrong; or 100- |difference between the user result and the correct result|
+ * @return 100- |difference between the user result and the correct result|
  *
  */
 int getUsersScore(char* recvbuffer,int correctResult){
@@ -749,15 +660,15 @@ for(int i=0;i<7;i++){
 //Jetzt muss der server auf Verbindungen warten
 
     //Create semaphore and shared memory
-    printf("p1\n");
+
     if(create_semaphore()==-1){
         exit(1);
     }
-    printf("p2\n");
+
     if(create_sharedMemory()==-1){
         exit(1);
     }
-    printf("p3\n");
+
     if(attachSharedMemory()==-1){
         exit(1);
     }
@@ -766,49 +677,6 @@ for(int i=0;i<7;i++){
 
     //create the scoretable
     create_ScoreTable();
-
-
-    //berechnePostfix(test);
-
-    //getUsersScore(test,10);
-    char name[2]={'t','\0'};
-    char *name_ptr=name;
-
-    char nametwo[2]={'s','\0'};
-    char *name_ptrtwo=nametwo;
-
-    writeScoreTable(10,name);
-    writeScoreTable(5,name);
-    writeScoreTable(8,name);
-    writeScoreTable(88,name);
-    writeScoreTable(100,name);
-    writeScoreTable(76,name);
-    writeScoreTable(46,name);
-    writeScoreTable(0,name);
-    writeScoreTable(37,name);
-
-    char postfixinput[10]={'2','3','2',' ','4',' ','-','\0'}; //zu große zahl
-    char postfixinput2[10]={'2','3',' ',' ','4',' ','-','\0'}; //zu viele leerzeichen
-
-    char postfixinput3[10]={'2','3',' ','+','4',' ','-','\0'}; //+4
-    char postfixinput4[10]={'2','3',' ','#',' ','-','\0'};//#
-    char postfixinput5[10]={'2','3','2','4','-','\0'};//keine leerzeichen
-
-    char *postfixinput_ptr=postfixinput;
-    char *postfixinput_ptr2=postfixinput2;
-
-    char *postfixinput_ptr3=postfixinput3;
-    char *postfixinput_ptr4=postfixinput4;
-
-    char *postfixinput_ptr5=postfixinput5;
-    int d[4]={4,2,5,23};
-    printf("%s\n",checkInput(postfixinput_ptr,d));
-    printf("%s\n",checkInput(postfixinput_ptr2,d));
-    printf("%s\n",checkInput(postfixinput_ptr3,d));
-    printf("%s\n",checkInput(postfixinput_ptr4,d));
-    printf("%s\n",checkInput(postfixinput_ptr5,d));
-
-
 
 
 char *nachricht = "Willkommen client!";
@@ -869,52 +737,56 @@ if(parent == 1){
     strcpy(spielername,recvbuffer);
 
 
-    while(1==1 && abbruch == 0){//Schleife in der Nachrichten verarbeitet werden
-        waitRecv(consocket,recvbuffer);//Empfängt Nachricht vom Client
-        printf("Nachricht vom Client: %s\n",recvbuffer);//printet diese aus
+    while(1==1 && abbruch == 0) {//Schleife in der Nachrichten verarbeitet werden
+        waitRecv(consocket, recvbuffer);//Empfängt Nachricht vom Client
+        printf("Nachricht vom Client: %s\n", recvbuffer);//printet diese aus
 
 
-        if(strncmp(recvbuffer,"QUIT",4)== 0){//erkenne disconnect vom Client
+        if (strncmp(recvbuffer, "QUIT", 4) == 0) {//erkenne disconnect vom Client
             break;
 
-        }else if(strncmp(recvbuffer,"TOP",3)== 0){//erkenne TOP vom Client
+        } else if (strncmp(recvbuffer, "TOP", 3) == 0) {//erkenne TOP vom Client
 
             printf("SPIELER VERLANGT TOP 10\n");
             //send all lines of the scoretable in the correct order to the client
-           for(int i=0;i<10;i++){
+            for (int i = 0; i < 10; i++) {
 
-               send(consocket,readScoreTableLine(i),strlen(readScoreTableLine(i)),0); //send the line to the client
-               printf("size: %d\n",strlen(readScoreTableLine(i)));
-               usleep(5000);
-           }
-            //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
-
+                send(consocket, readScoreTableLine(i), strlen(readScoreTableLine(i)), 0); //send the line to the client
+                printf("size: %d\n", strlen(readScoreTableLine(i)));
+                usleep(5000);
+            }
 
 
-        }else if(kontrolliereSyntax(recvbuffer,e)){
-            printf("syntax gültig\n");
-            int spielererg = getUsersScore(recvbuffer,erg);
+        } else {
+            char *syntaxError;
+            syntaxError = kontrolliereSyntax(recvbuffer, e);
+            if (syntaxError == "Success") {
+                printf("syntax gültig\n");
+                int spielererg = getUsersScore(recvbuffer, erg);
 
-            writeScoreTable(spielererg,spielername);
-            if(isInScoreTable(spielername,spielererg)) {
-                //client is in the scoretable
+                writeScoreTable(spielererg, spielername);
+                if (isInScoreTable(spielername, spielererg)) {
+                    //client is in the scoretable
 
-                sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit in die top10 gekommen!",
-                        spielererg);//bereitet den Antworttext vor
-                send(consocket, sendbuffer, strlen(sendbuffer), 0);
+                    sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit in die top10 gekommen!",
+                            spielererg);//bereitet den Antworttext vor
+                    send(consocket, sendbuffer, strlen(sendbuffer), 0);
+                } else {
+                    //client is outside the scoretable
+                    sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit nicht in die top10 gekommen!",
+                            spielererg);
+                    send(consocket, sendbuffer, strlen(sendbuffer), 0);
+
+                }
             }
             else{
-                //client is outside the scoretable
-                sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit nicht in die top10 gekommen!",
-                        spielererg);
-                send(consocket, sendbuffer, strlen(sendbuffer), 0);
 
-            }
-        }else{
-            printf("syntax ungültig\n");
-            sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
-            send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
+                printf("syntax ungültig\n");
+                sprintf(sendbuffer, "Keine gültige Nachricht: %s: %s; %s\n", spielername,
+                    recvbuffer,syntaxError);//bereitet den Echo Antworttext vor
+                send(consocket, sendbuffer, strlen(sendbuffer), 0);//sendet diesen
         }
+    }
 
 
     }
