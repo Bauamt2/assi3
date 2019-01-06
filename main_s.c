@@ -541,7 +541,7 @@ int kontrolliereSyntax(char *recvbuffer,int e[]){
 
                 if(temp[i]==' '){
 
-                    sprintf(errormessage,"Too much whitespace is used.");
+                    printf("Too much whitespace is used.");
                     //return error_ptr;
                     return 1;
                 }
@@ -549,16 +549,20 @@ int kontrolliereSyntax(char *recvbuffer,int e[]){
                 else if(i!=0 && isOperationsymbol(temp[i])){
 
                     sprintf(errormessage,"Operationsymbol is at a wrong position. Insert whitespace around it. Symbol is: %c",temp[i]);
+                    printf("%s \n",errormessage);
                     //return error_ptr;
                     return 1;
                 }
                 //wrong symbol
-                else if(atoi(&temp[i])==0 && isOperationsymbol(temp[i])==0){
+                /*else if(atoi(&temp[i])==0 && isOperationsymbol(temp[i])==0){
 
                     sprintf(errormessage,"You use a wrong symbol. Symbol is: %c",temp[i]);
+                    printf("%s \n",errormessage);
                     //return error_ptr;
                     return 1;
                 }
+                 */
+
 
             }
 
@@ -579,6 +583,7 @@ int kontrolliereSyntax(char *recvbuffer,int e[]){
                 }
                 if(found ==0){
                     sprintf(errormessage,"You used a wrong number. Number is: %i",number);
+                    printf("%s \n",errormessage);
                     //return error_ptr;
                     return 1;
                 }
@@ -596,10 +601,12 @@ int kontrolliereSyntax(char *recvbuffer,int e[]){
     }
     if(whitespaceCount ==0){
         sprintf(errormessage,"You used no whitespace.");
+        printf("%s \n",errormessage);
         return 1;
     }
     else{
         sprintf(errormessage,"Success");
+        printf("%s \n",errormessage);
     }
     //return error_ptr;
     return 0;
@@ -692,6 +699,8 @@ for(int i=0;i<7;i++){
 
 
 
+
+
 char *nachricht = "Willkommen client!";
 
 struct sockaddr_in dest;
@@ -775,7 +784,7 @@ if(parent == 1){
             int syntaxError = kontrolliereSyntax(recvbuffer, e);
 
 
-            if (syntaxError == 0) {
+           // if (syntaxError == 0) {
                 printf("syntax gültig\n");
                 int spielererg = getUsersScore(recvbuffer, erg);
 
@@ -793,14 +802,16 @@ if(parent == 1){
                     send(consocket, sendbuffer, strlen(sendbuffer), 0);
 
                 }
-            }
-            else{
+            //}
+            /*else{
 
                 printf("syntax ungültig\n");
                 sprintf(sendbuffer,"Ungueltiger Syntax: %s %s",spielername,recvbuffer);
                 //sprintf(sendbuffer, "%s\n",syntaxError);//bereitet den Echo Antworttext vor
                 send(consocket, sendbuffer, strlen(sendbuffer), 0);//sendet diesen
         }
+             */
+
     }
 
 
