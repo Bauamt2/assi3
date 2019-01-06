@@ -22,21 +22,10 @@ static struct sembuf semaphore;
 static int semid;
 int sharedID;
 int abbruch = 0;
-int childids[50];
 
 void intHandler(int nix) {
     abbruch = 1;
-    for(int i=0;i<50;i++){
-        if(childids[i] == -1){
-            break;
-        }else{
-            //killl kind
-            kill(childids[i],SIGKILL);
-        }
-    }
-    //zusammenforekn
     printf("Ok, Server wird sofort beendet!\n");
-    exit(0);
 }
 //for each player
 struct Player{
@@ -82,7 +71,7 @@ int erlaubteZahl(int temp,int e[]){
  */
 void waitRecv(int socket, char* recvbuffer){
     int size=0;
-    //printf("warte auf paket\n");
+    printf("warte auf paket\n");
 
     while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
         usleep(1000);
@@ -371,6 +360,28 @@ void writeScoreTable(int points, char *name_ptr){
     memcpy(shm,scoretable,sizeof(scoretable));
     semaphoreUsing(UNLOCK);
 }
+
+/**Checks if the client with the given name is in the scoretable
+ *
+ * @param name of the client
+ * @return 1 if the client is in the scoretable; else 0
+ */
+int isInScoreTable(char *name,int score){
+    semaphoreUsing(LOCK);
+    struct Player scoretable[10];
+    memcpy(scoretable,shm,sizeof(scoretable));
+    for(int i=0;i<10;i++){
+        char *playername = scoretable[i].name;
+        if(*playername == *name) {
+            if(scoretable[i].score == score){
+                semaphoreUsing(UNLOCK);
+                return 1;
+            }
+        }
+    }
+    semaphoreUsing(UNLOCK);
+    return 0;
+}
 /**Checks if the char is a operation symbol like +,*,-,/
  * @param symbol
  * @return 1 if it is a opertion symbol
@@ -468,7 +479,7 @@ int berechnePostfix(char* recvbuffer){
 
     postfix=deleteWhitespace(recvbuffer);
     free_ptr = postfix;
-    printf("test:%i\n",postfix[0]=='1');
+
 
 
     int firstnumber=0;
@@ -511,7 +522,7 @@ int berechnePostfix(char* recvbuffer){
     }
     result = stack[top];
     free(free_ptr);
-     printf("Result: %i\n",result);
+
     return result;
 
 }
@@ -532,20 +543,22 @@ int kontrolliereSyntax(char* recvbuffer, int e[]){
 
     printf("ich pruefe jetzt: %s\n",pruefe);
     while(1) {
-        if (isOperationsymbol(pruefe[i]) || pruefe[i] == ' ') {
+        if (isOperationsymbol(pruefe[i])) {
             i++;
-        } else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 9) {//prüft ob an der Stelle eine Zahl ist 1-9
+        }
+        else if (pruefe[i]-'0' >= 1 && pruefe[i]-'0' <= 100) {//prüft ob an der Stelle eine Zahl ist 1-100
             int it = 1;
             temp[0] = pruefe[i];
             while (1) {
 
-                if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
+              if (pruefe[i + it]-'0' >= 1 && pruefe[i + it]-'0' <= 9) {//prüft ob ZAhl 1-9
                     temp[it] = pruefe[i + it];
                     it++;
                     if (it > 3) {
                         free(pruefe);
                         return 0;//Zahl ist >4 Stellen lang, Fehler!
                     }
+
                 } else {
                     temp[it] = '\0';
                     break;
@@ -573,6 +586,105 @@ int kontrolliereSyntax(char* recvbuffer, int e[]){
 
     return korrekt;
 }
+
+char* checkInput(char *recvbuffer,int e[]){
+    printf("Check input\n");
+    char errormessage[100];
+    char *error_ptr;
+    error_ptr=errormessage;
+    char *start;
+    start=recvbuffer;
+    int whitespaceCount =0;
+    int endLoop=0;
+
+    while(1){
+        if(*recvbuffer==' ' || *recvbuffer == '\0'){
+            if(*recvbuffer == '\0'){
+                if(whitespaceCount ==0){
+                    break;
+                }
+                endLoop=1;
+            }
+
+            int tempLength= recvbuffer -start;
+            char temp[tempLength];
+
+            for (int i = 0; i < tempLength; i++) {
+                temp[i] = *start + i;
+            }
+
+
+            int foundOperation =0;
+            //check the syntax
+            for(int i=0;i<tempLength;i++){
+                //too much whitespace
+                if(isOperationsymbol(temp[i]) && i=0){
+                    if(tempLength >1){
+                        sprintf(errormessage,"Use withespace between operationsymbol and next symbol. Symbol is after: %c",temp[i]);
+                        return error_ptr;
+                    }
+                    foundOperation =1;
+                }
+                if(temp[i]==' '){
+
+                    sprintf(errormessage,"Too much whitespace is used.");
+                    return error_ptr;
+                }
+                //operationsymbol at the wrong position
+                else if(i!=0 && isOperationsymbol(temp[i])){
+
+                    sprintf(errormessage,"Operationsymbol is at a wrong position. Insert whitespace around it. Symbol is: %c",temp[i]);
+                    return error_ptr;
+                }
+                //wrong symbol
+                else if(atoi(&temp[i])==0 && isOperationsymbol(temp[i])==0){
+
+                    sprintf(errormessage,"You use a wrong symbol. Symbol is: %c",temp[i]);
+                    return error_ptr;
+                }
+
+            }
+
+
+            if(foundOperation ==0){
+                int found =0;
+                int number=atoi(temp);
+                if(number >0 && number <=100){
+
+                    for(int i=0;i<7;i++){
+
+                        if(e[i] == number){
+                            found =1;
+                            break;
+                        }
+                    }
+
+                }
+                if(found ==0){
+                    sprintf(errormessage,"You used a wrong number. Number is: %i",number);
+                    return error_ptr;
+                }
+            }
+
+            start = recvbuffer+1;
+
+            whitespaceCount++;
+
+        }
+        recvbuffer++;
+        if(endLoop){
+           break;
+       }
+    }
+    if(whitespaceCount ==0){
+        sprintf(errormessage,"You used no whitespace.");
+    }
+    else{
+        sprintf(errormessage,"Success");
+    }
+    return error_ptr;
+}
+
 /**Calculate the score for the given input
  * @param recvbuffer the input
  * @param correctResult the correct Result
@@ -580,16 +692,14 @@ int kontrolliereSyntax(char* recvbuffer, int e[]){
  *
  */
 int getUsersScore(char* recvbuffer,int correctResult){
-    printf("gET uSER sCORE\n");
+
     int result = berechnePostfix(recvbuffer);
     int difference=correctResult-result;
-    printf("Differenz: %i",difference);
+
     if(difference >=0){
-        printf("Result:%i Differenz:%i\n",100-difference,difference);
         return 100-difference;
     }
     else {
-        printf("Result:%i Differenz:%i\n", 100 - difference, difference);
         return 100 + difference ;
     }
 }
@@ -639,12 +749,15 @@ for(int i=0;i<7;i++){
 //Jetzt muss der server auf Verbindungen warten
 
     //Create semaphore and shared memory
+    printf("p1\n");
     if(create_semaphore()==-1){
         exit(1);
     }
+    printf("p2\n");
     if(create_sharedMemory()==-1){
         exit(1);
     }
+    printf("p3\n");
     if(attachSharedMemory()==-1){
         exit(1);
     }
@@ -653,7 +766,7 @@ for(int i=0;i<7;i++){
 
     //create the scoretable
     create_ScoreTable();
-    readScoreTable();
+
 
     //berechnePostfix(test);
 
@@ -661,7 +774,8 @@ for(int i=0;i<7;i++){
     char name[2]={'t','\0'};
     char *name_ptr=name;
 
-
+    char nametwo[2]={'s','\0'};
+    char *name_ptrtwo=nametwo;
 
     writeScoreTable(10,name);
     writeScoreTable(5,name);
@@ -672,12 +786,30 @@ for(int i=0;i<7;i++){
     writeScoreTable(46,name);
     writeScoreTable(0,name);
     writeScoreTable(37,name);
-   // writeScoreTable(76,name);
-    readScoreTable();
-    for(int i=0;i<10;i++){
-        printf("%s\n",readScoreTableLine(i));
-    }
-    printf(" Line 9:%s\n",readScoreTableLine(9));
+
+    char postfixinput[10]={'2','3','2',' ','4',' ','-','\0'}; //zu große zahl
+    char postfixinput2[10]={'2','3',' ',' ','4',' ','-','\0'}; //zu viele leerzeichen
+
+    char postfixinput3[10]={'2','3',' ','+','4',' ','-','\0'}; //+4
+    char postfixinput4[10]={'2','3',' ','#',' ','-','\0'};//#
+    char postfixinput5[10]={'2','3','2','4','-','\0'};//keine leerzeichen
+
+    char *postfixinput_ptr=postfixinput;
+    char *postfixinput_ptr2=postfixinput2;
+
+    char *postfixinput_ptr3=postfixinput3;
+    char *postfixinput_ptr4=postfixinput4;
+
+    char *postfixinput_ptr5=postfixinput5;
+    int d[4]={4,2,5,23};
+    printf("%s\n",checkInput(postfixinput_ptr,d));
+    printf("%s\n",checkInput(postfixinput_ptr2,d));
+    printf("%s\n",checkInput(postfixinput_ptr3,d));
+    printf("%s\n",checkInput(postfixinput_ptr4,d));
+    printf("%s\n",checkInput(postfixinput_ptr5,d));
+
+
+
 
 char *nachricht = "Willkommen client!";
 
@@ -697,29 +829,15 @@ bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
 
 int parent =1;
 int ende = 0;
-
-for(int i=0;i<50;i++){
-    childids[i]=-1;
-}
-int clients=0;
-int aktuelleid=-1;
-    int consocket=-1;
 while(parent == 1 && abbruch == 0) {
-    printf("%d\n",listen(mysocket, 10));
-    consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
-    usleep(100000);
+    listen(mysocket, 10);
+    usleep(10000);
    // printf("JUMP!");
-aktuelleid = fork();
-//printf("habe geforkt mit id: %d\n",aktuelleid);
-    if(aktuelleid == 0){
+    if(fork() == 0){
         //child
         parent = 0;
-    }else{
-        //speichere fork id
-        childids[clients] = aktuelleid;
-        clients++;
-
     }
+    //TODO: abbruchbedingung durch eingabe
 }
 
 if(parent == 1){
@@ -730,7 +848,7 @@ if(parent == 1){
 }
 
 
-
+    int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
     char sendbuffer[101];
     char spielername[100];
@@ -761,22 +879,39 @@ if(parent == 1){
 
         }else if(strncmp(recvbuffer,"TOP",3)== 0){//erkenne TOP vom Client
 
+            printf("SPIELER VERLANGT TOP 10\n");
+            //send all lines of the scoretable in the correct order to the client
            for(int i=0;i<10;i++){
+
                send(consocket,readScoreTableLine(i),strlen(readScoreTableLine(i)),0); //send the line to the client
+               printf("size: %d\n",strlen(readScoreTableLine(i)));
                usleep(5000);
            }
+            //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 
 
-        }else if(kontrolliereSyntax(recvbuffer,e)){//Korrekte Postfix Notation
+
+        }else if(kontrolliereSyntax(recvbuffer,e)){
+            printf("syntax gültig\n");
             int spielererg = getUsersScore(recvbuffer,erg);
-            //printf("erg: %n\n",spielererg);
-            //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
 
-            sprintf(sendbuffer,"Gültige Postfix erkannt, dein Ergebnis ist: %d",spielererg);//bereitet den Antworttext vor
-            send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
             writeScoreTable(spielererg,spielername);
+            if(isInScoreTable(spielername,spielererg)) {
+                //client is in the scoretable
+
+                sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit in die top10 gekommen!",
+                        spielererg);//bereitet den Antworttext vor
+                send(consocket, sendbuffer, strlen(sendbuffer), 0);
+            }
+            else{
+                //client is outside the scoretable
+                sprintf(sendbuffer, "Gültige Postfix erkannt: %i Du bist damit nicht in die top10 gekommen!",
+                        spielererg);
+                send(consocket, sendbuffer, strlen(sendbuffer), 0);
+
+            }
         }else{
-            printf("Syntax ungültig\n");
+            printf("syntax ungültig\n");
             sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
         }
@@ -799,13 +934,6 @@ if(parent == 1){
     printf("Verbindung geschlossen von: %s\n",inet_ntoa(dest.sin_addr));
     close(consocket);//schließe verbindung
     close(mysocket);//schließe verbindung
-
-//delete semaphore and shared memory after a program crash
-//ipcrm -M;
-//ipcrm -s;
-
-//TODO detach shared memory shmdt
-
 
     return 0;
 }
