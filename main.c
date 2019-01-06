@@ -13,21 +13,28 @@
 #include <signal.h>
 
 int abbruch = 0;
-
+/*
+ * wird benötigt für das Beenden mit strg+c
+ */
 void intHandler(int nix) {
     abbruch = 1;
     printf("Alles klar! Mit Enter können sie das Spiel nun beenden!\n");
 }
 
-
+/*
+ * Fragt nach dem namen und gibt ihn per pname weiter.
+ */
 void erfrageNamen(char* pname){
     system("clear");
     printf("Willkommen im Sopper Dooper Spiel!\n");
     printf("Verrate mir deinen Namen Spieler!\n");
 
     scanf("%s",pname);
-    //TODO: HIER WEITERPROGGEN
+
 }
+/*
+ * Überprüft ob die Aufgabe vom Server erfolgreich empfangen wurde und gültig ist.
+ */
 int pruefeAufgabe(int erg,int e[]){
     if(erg < 1 || erg > 1000){
         return 0;
@@ -39,6 +46,9 @@ int pruefeAufgabe(int erg,int e[]){
     }
     return 1;
 }
+/*
+ * Diese Funktion zeigt immer wieder den Selben SPielscreen, ist erheblich schöner als alles nur untereinander zu schreiben.
+ */
 void zeigeAufgaben(int erg, int e[],char name[],char lastcmd[],char lastanswer[]){
     system("clear");
     printf("Willkommen im Sopper Dooper Spiel!\n");
