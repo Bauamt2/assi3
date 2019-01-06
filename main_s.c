@@ -22,10 +22,21 @@ static struct sembuf semaphore;
 static int semid;
 int sharedID;
 int abbruch = 0;
+int childids[50];
 
 void intHandler(int nix) {
     abbruch = 1;
+    for(int i=0;i<50;i++){
+        if(childids[i] == -1){
+            break;
+        }else{
+            //killl kind
+            kill(childids[i],SIGKILL);
+        }
+    }
+    //zusammenforekn
     printf("Ok, Server wird sofort beendet!\n");
+    exit(0);
 }
 //for each player
 struct Player{
@@ -71,7 +82,7 @@ int erlaubteZahl(int temp,int e[]){
  */
 void waitRecv(int socket, char* recvbuffer){
     int size=0;
-    printf("warte auf paket\n");
+    //printf("warte auf paket\n");
 
     while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
         usleep(1000);
@@ -628,15 +639,12 @@ for(int i=0;i<7;i++){
 //Jetzt muss der server auf Verbindungen warten
 
     //Create semaphore and shared memory
-    printf("p1\n");
     if(create_semaphore()==-1){
         exit(1);
     }
-    printf("p2\n");
     if(create_sharedMemory()==-1){
         exit(1);
     }
-    printf("p3\n");
     if(attachSharedMemory()==-1){
         exit(1);
     }
@@ -689,15 +697,29 @@ bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
 
 int parent =1;
 int ende = 0;
+
+for(int i=0;i<50;i++){
+    childids[i]=-1;
+}
+int clients=0;
+int aktuelleid=-1;
+    int consocket=-1;
 while(parent == 1 && abbruch == 0) {
-    listen(mysocket, 10);
-    usleep(10000);
+    printf("%d\n",listen(mysocket, 10));
+    consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
+    usleep(100000);
    // printf("JUMP!");
-    if(fork() == 0){
+aktuelleid = fork();
+//printf("habe geforkt mit id: %d\n",aktuelleid);
+    if(aktuelleid == 0){
         //child
         parent = 0;
+    }else{
+        //speichere fork id
+        childids[clients] = aktuelleid;
+        clients++;
+
     }
-    //TODO: abbruchbedingung durch eingabe
 }
 
 if(parent == 1){
@@ -708,7 +730,7 @@ if(parent == 1){
 }
 
 
-    int consocket = accept(mysocket, (struct sockaddr *) &dest, &socksize);//Ab hier besteht eine Clientverbindung
+
     char recvbuffer[101];//Für die empfangene Nachricht vom Client
     char sendbuffer[101];
     char spielername[100];
@@ -738,31 +760,23 @@ if(parent == 1){
             break;
 
         }else if(strncmp(recvbuffer,"TOP",3)== 0){//erkenne TOP vom Client
-            //TODO: SENDE ALLE 10 EINTRÄGE IN DER RICHTIGEN REIHENFOLGE
-            // 1. NAME             PUNKTZAHL
-            printf("SPIELER VERLANGT TOP 10\n");
 
            for(int i=0;i<10;i++){
-
                send(consocket,readScoreTableLine(i),strlen(readScoreTableLine(i)),0); //send the line to the client
-               printf("size: %d\n",strlen(readScoreTableLine(i)));
                usleep(5000);
            }
-            //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
 
 
-
-        }else if(kontrolliereSyntax(recvbuffer,e)){
-            printf("syntax gültig\n");
+        }else if(kontrolliereSyntax(recvbuffer,e)){//Korrekte Postfix Notation
             int spielererg = getUsersScore(recvbuffer,erg);
             //printf("erg: %n\n",spielererg);
             //TODO: gebe spielererg und spielername weiter an die Highscoretabelle
-            //antworte ob er dmait in die top10 gekommen ist oder nicht
-            sprintf(sendbuffer,"Gültige Postfix erkannt: %i Du bist damit ja/nein in die top10 gekommen!",spielererg);//bereitet den Antworttext vor
+
+            sprintf(sendbuffer,"Gültige Postfix erkannt, dein Ergebnis ist: %d",spielererg);//bereitet den Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
-                //TODO: PAT int aktualisiereScoreboard(pielername,score)
+            writeScoreTable(spielererg,spielername);
         }else{
-            printf("syntax ungültig\n");
+            printf("Syntax ungültig\n");
             sprintf(sendbuffer,"Keine gültige Nachricht: %s: %s\n",spielername,recvbuffer);//bereitet den Echo Antworttext vor
             send(consocket,sendbuffer,strlen(sendbuffer),0);//sendet diesen
         }

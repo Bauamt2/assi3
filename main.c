@@ -107,8 +107,8 @@ void zeigeAufgaben(int erg, int e[],char name[],char lastcmd[],char lastanswer[]
  */
 void waitRecv(int socket, char* recvbuffer){
     int size=0;
-    printf("warte auf paket\n");
-
+    //printf("warte auf paket\n");
+    int wartezeit =0;
     while((size = recv(socket,recvbuffer,100,0)) == -1 || size == 0){
         if(abbruch == 0) {
             usleep(1000);
@@ -118,10 +118,15 @@ void waitRecv(int socket, char* recvbuffer){
            exit(2);
            return;
         }
+        wartezeit++;
+        if(wartezeit > 5000){
+            abbruch =1;
+            send(socket,"QUIT",4,0);
+        }
     }
     recvbuffer[size] = '\0';
-    printf("!!wr paket Size: %d\n",size);
-    printf("!!wr paket Inhalt: %s\n",recvbuffer);
+   // printf("!!wr paket Size: %d\n",size);
+    //printf("!!wr paket Inhalt: %s\n",recvbuffer);
 
     return;
 }
