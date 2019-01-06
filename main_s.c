@@ -673,8 +673,6 @@ for(int i=0;i<7;i++){
         exit(1);
     }
 
-
-
     //create the scoretable
     create_ScoreTable();
 
