@@ -25,7 +25,7 @@ int abbruch = 0;
 
 void intHandler(int nix) {
     abbruch = 1;
-    printf("Ok, Server wird bald beendet!\n");
+    printf("Ok, Server wird sofort beendet!\n");
 }
 //for each player
 struct Player{
@@ -299,17 +299,20 @@ char * readScoreTableLine(int line){
 
         int length=6+ sizeof(scoretable[line].name)+1+7+sizeof(score); //Name: %s Score: %i\n\0
         char outputline[length];
+        printf("recaodres length: %d\n",length);
         char * outputline_ptr;
-        outputline_ptr = outputline;
+
 
         //create outputline
-        strcpy(outputline,"Name: ");
-        strcat(outputline,scoretable[line].name);
-        strcat(outputline," Score: ");
-        strcat(outputline,score);
-
+       // strcpy(outputline,"Name: ");
+        //strcat(outputline,scoretable[line].name);
+        //strcat(outputline," Score: ");
+        //strcat(outputline,score);
+        sprintf(outputline,"Name: %s Score: %s",scoretable[line].name,score);
+        outputline_ptr = outputline;
         semaphoreUsing(UNLOCK);
         printf("%s\n",outputline_ptr);
+        printf("size pointer:%u\n",strlen(outputline_ptr));
         return outputline_ptr;
     }
 }
@@ -726,7 +729,7 @@ if(parent == 1){
     strcpy(spielername,recvbuffer);
 
 
-    while(1==1){//Schleife in der Nachrichten verarbeitet werden
+    while(1==1 && abbruch == 0){//Schleife in der Nachrichten verarbeitet werden
         waitRecv(consocket,recvbuffer);//Empfängt Nachricht vom Client
         printf("Nachricht vom Client: %s\n",recvbuffer);//printet diese aus
 
@@ -741,8 +744,8 @@ if(parent == 1){
 
            for(int i=0;i<10;i++){
 
-               send(consocket,readScoreTableLine(i),sizeof(readScoreTableLine(i)),0); //send the line to the client
-               printf("size: %s\n",sizeof(readScoreTableLine(i)));
+               send(consocket,readScoreTableLine(i),strlen(readScoreTableLine(i)),0); //send the line to the client
+               printf("size: %d\n",strlen(readScoreTableLine(i)));
                usleep(5000);
            }
             //TODO: JN Tabelle übergeben und ausgeben(hoffe das klappt)
